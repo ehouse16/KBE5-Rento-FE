@@ -1,10 +1,12 @@
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 
 interface Props {
   onSuccess?: () => void;
 }
 
 const CompanyRegisterForm: React.FC<Props> = ({ onSuccess }) => {
+  const navigate = useNavigate();
   const [bizNumber, setBizNumber] = useState('');
   const [name, setName] = useState('');
   const [bizNumberError, setBizNumberError] = useState('');
@@ -91,6 +93,10 @@ const CompanyRegisterForm: React.FC<Props> = ({ onSuccess }) => {
     }
   };
 
+  const handleCancel = () => {
+    navigate('/');
+  };
+
   return (
     <form onSubmit={handleSubmit}>
       <div className="mb-6">
@@ -124,6 +130,7 @@ const CompanyRegisterForm: React.FC<Props> = ({ onSuccess }) => {
       <div className="flex justify-end space-x-3">
         <button
           type="button"
+          onClick={handleCancel}
           className="px-6 py-2 border border-gray-300 rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 !rounded-button whitespace-nowrap cursor-pointer"
         >
           취소하기

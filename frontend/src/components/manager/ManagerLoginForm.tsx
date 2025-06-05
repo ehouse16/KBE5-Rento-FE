@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom'; 
 
 const ManagerLoginForm: React.FC = () => {
   const [companyCode, setCompanyCode] = useState('');
@@ -6,6 +7,7 @@ const ManagerLoginForm: React.FC = () => {
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  const navigate = useNavigate();
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -15,11 +17,15 @@ const ManagerLoginForm: React.FC = () => {
       const res = await fetch('/api/managers/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ companyCode, loginId, password }),
+        body: JSON.stringify({ loginId, password }),
       });
       if (res.ok) {
+        const data = await res.json();
         // JWT 등 처리
-        alert('로그인 성공!');
+        localStorage.setItem('token', data.token);
+        localStorage.setItem('loginId', data.loginId);
+
+        navigate('/');
       } else {
         setError('아이디, 비밀번호 또는 업체 코드가 올바르지 않습니다.');
       }
