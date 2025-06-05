@@ -1,1 +1,1 @@
-# KBE5-Rento-FE
+# KBE5-Rento-FE 렌토
