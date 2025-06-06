@@ -21,9 +21,21 @@ const ManagerLoginForm: React.FC = () => {
       });
       if (res.ok) {
         const data = await res.json();
-        // JWT 등 처리
-        localStorage.setItem('token', data.token);
-        localStorage.setItem('loginId', data.loginId);
+        
+        // 응답 헤더에서 토큰 추출
+        const accessToken = res.headers.get('AccessToken');
+        const refreshToken = res.headers.get('RefreshToken');
+        
+        // 토큰을 올바른 키로 저장
+        if (accessToken) {
+          localStorage.setItem('AccessToken', accessToken);
+        }
+        if (refreshToken) {
+          localStorage.setItem('RefreshToken', refreshToken);
+        }
+        
+        // 사용자 정보 저장 (응답 body에서)
+        localStorage.setItem('loginId', data.loginId || loginId);
 
         navigate('/');
       } else {
@@ -102,4 +114,4 @@ const ManagerLoginForm: React.FC = () => {
   );
 };
 
-export default ManagerLoginForm; 
+export default ManagerLoginForm;
