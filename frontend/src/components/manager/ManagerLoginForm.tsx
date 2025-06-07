@@ -17,34 +17,52 @@ const ManagerLoginForm: React.FC = () => {
       const res = await fetch('/api/managers/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ loginId, password }),
+        body: JSON.stringify({ 
+          companyCode,
+          loginId, 
+          password 
+        }),
       });
+      
       if (res.ok) {
         const data = await res.json();
-        
-        // 응답 헤더에서 토큰 추출
-        const accessToken = res.headers.get('AccessToken');
-        const refreshToken = res.headers.get('RefreshToken');
-        
-        // 토큰을 올바른 키로 저장
-        if (accessToken) {
-          localStorage.setItem('AccessToken', accessToken);
-        }
-        if (refreshToken) {
-          localStorage.setItem('RefreshToken', refreshToken);
-        }
-        
-        // 사용자 정보 저장 (응답 body에서)
-        localStorage.setItem('loginId', data.loginId || loginId);
+        console.log('Login response data:', data);
 
-        navigate('/');
+        // 토큰 추출 (대소문자 구분 없이)
+        const accessToken = res.headers.get('accesstoken') || 
+                          res.headers.get('AccessToken') || 
+                          res.headers.get('ACCESSTOKEN');
+        const refreshToken = res.headers.get('refreshtoken') || 
+                           res.headers.get('RefreshToken') || 
+                           res.headers.get('REFRESHTOKEN');
+
+        console.log('Access Token:', accessToken);
+        console.log('Refresh Token:', refreshToken);
+
+        if (!accessToken || !refreshToken) {
+          throw new Error('토큰이 서버 응답에 포함되지 않았습니다.');
+        }
+
+        // 토큰 저장
+        localStorage.setItem('accessToken', accessToken);
+        localStorage.setItem('refreshToken', refreshToken);
+        
+        // 사용자 정보 저장
+        localStorage.setItem('loginId', data.loginId);
+        localStorage.setItem('companyCode', data.companyCode);
+        localStorage.setItem('managerName', data.name);
+
+        navigate('/dashboard');
       } else {
-        setError('아이디, 비밀번호 또는 업체 코드가 올바르지 않습니다.');
+        const errorData = await res.json().catch(() => ({}));
+        setError(errorData.message || '로그인에 실패했습니다.');
       }
-    } catch {
-      setError('로그인 중 오류가 발생했습니다.');
+    } catch (error) {
+      console.error('Login error:', error);
+      setError(error instanceof Error ? error.message : '로그인 중 오류가 발생했습니다.');
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
   };
 
   return (

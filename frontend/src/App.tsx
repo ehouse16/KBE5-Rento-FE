@@ -4,17 +4,44 @@ import LandingPage from './components/pages/LandingPage';
 import CompanyRegisterPage from './components/pages/CompanyRegisterPage';
 import ManagerRegisterPage from './components/pages/ManagerRegisterPage';
 import ManagerLoginPage from './components/pages/ManagerLoginPage';
-const App: React.FC = () => {
-  return (
-    <Router>
-      <Routes>
-        <Route path="/" element={<LandingPage />} />
-        <Route path="/company/register" element={<CompanyRegisterPage />} />
-        <Route path="/manager/register" element={<ManagerRegisterPage />} />
-        <Route path="/manager/login" element={<ManagerLoginPage />} />
-      </Routes>
-    </Router>
-  );
-};
+import Layout from './components/Layout';
+import DashboardPage from './components/pages/DashBoardPage';
+import UserManagementPage from './components/pages/UserManagementPage';
+import { CompanyProvider } from './contexts/CompanyContext';
 
-export default App; 
+function App() {
+  return (
+    <CompanyProvider>
+      <Router>
+        <Routes>
+          {/* 헤더, 사이드바 필요 없는 페이지들 */}
+          <Route path="/" element={<LandingPage />} />
+          <Route path="/company-register" element={<CompanyRegisterPage />} />
+          <Route path="/manager-register" element={<ManagerRegisterPage />} />
+          <Route path="/manager-login" element={<ManagerLoginPage />} />
+
+          {/* 헤더, 사이드바, 푸터가 필요한 페이지들은 Layout으로 감싸기 */}
+          <Route
+            path="/dashboard"
+            element={
+              <Layout>
+                <DashboardPage />
+              </Layout>
+            }
+          />
+          <Route
+            path="/users"
+            element={
+              <Layout>
+                <UserManagementPage />
+              </Layout>
+            }
+          />
+          {/* 다른 인증 이후 페이지들도 동일하게 Layout 감싸기! */}
+        </Routes>
+      </Router>
+    </CompanyProvider>
+  );
+}
+
+export default App;

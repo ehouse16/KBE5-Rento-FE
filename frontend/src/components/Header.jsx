@@ -1,28 +1,77 @@
-// components/Header.jsx
-import React from "react";
-import styles from "./Header.module.css"; // CSS 모듈 사용 예시
+import React, { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
+import styles from "./Header.module.css";
 
-const Header = () => (
-  <header className={styles.header}>
-    <div className={styles.logoSection}>
-      <img src="/logo.svg" alt="FleetPro Logo" className={styles.logo} />
-      <div>
-        <div className={styles.title}>FleetPro</div>
-        <div className={styles.subtitle}>Management Service</div>
-      </div>
-    </div>
-    <div className={styles.rightSection}>
-      <button className={styles.exportBtn}>Export</button>
-      <button className={styles.newTripBtn}>+ New Trip</button>
-      <div className={styles.userInfo}>
-        <span className={styles.avatar}>CA</span>
-        <div>
-          <div className={styles.userName}>Company Admin</div>
-          <div className={styles.userEmail}>admin@company.com</div>
+const Header = () => {
+  const [loginId, setLoginId] = useState("");
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    const storedLoginId = localStorage.getItem("loginId");
+    if (storedLoginId) {
+      setLoginId(storedLoginId);
+    }
+  }, []);
+
+  const handleLogout = async () => {
+    const accessToken = localStorage.getItem("AccessToken") || localStorage.getItem("accessToken");
+    const refreshToken = localStorage.getItem("RefreshToken") || localStorage.getItem("refreshToken");
+
+    if (!accessToken) {
+      alert("인증 토큰이 없습니다. 다시 로그인해 주세요.");
+      localStorage.clear();
+      navigate("/manager-login");
+      return;
+    }
+
+    try {
+      const response = await fetch("/api/managers/logout", {
+        method: "POST",
+        headers: {
+          AccessToken: accessToken,
+          RefreshToken: refreshToken || "",
+          "Content-Type": "application/json",
+        },
+      });
+
+      if (!response.ok) {
+        const errorData = await response.text();
+        console.error("로그아웃 실패 응답:", errorData);
+        throw new Error(`로그아웃 실패: ${response.status}`);
+      }
+
+      localStorage.clear();
+      setLoginId("");
+      navigate("/");
+    } catch (error) {
+      console.error("로그아웃 실패:", error);
+      localStorage.clear();
+      setLoginId("");
+      navigate("/manager-login");
+    }
+  };
+
+  const handleTitleClick = () => {
+    navigate("/");
+  };
+
+  return (
+    <header className={styles.header}>
+      <div className={styles.logoSection}>
+        <div onClick={handleTitleClick} style={{ cursor: "pointer" }}>
+          <div className={styles.title}>Rento</div>
+          <div className={styles.subtitle}>차량 관제 서비스</div>
         </div>
       </div>
-    </div>
-  </header>
-);
+
+      <div className={styles.userInfo}>
+        <div className={styles.userName}>{loginId}님, 환영합니다!</div>
+        <button onClick={handleLogout} className={styles.logoutButton}>
+          로그아웃
+        </button>
+      </div>
+    </header>
+  );
+};
 
 export default Header;

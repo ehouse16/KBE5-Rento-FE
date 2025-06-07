@@ -1,0 +1,682 @@
+import React, { useState, useEffect } from 'react';
+import { Member, MemberRegisterRequest, MemberUpdateRequest, getMembers, getMember, registerMember, updateMember, deleteMember, getPositions } from '../../services/memberService';
+import { Department, DepartmentRegisterRequest, DepartmentUpdateRequest, getDepartments, registerDepartment, updateDepartment, deleteDepartment } from '../../services/departmentService';
+import { handleApiError } from '../../utils/errorHandler';
+import { useCompany } from '../../contexts/CompanyContext';
+
+const UserManagementPage: React.FC = () => {
+  const { companyCode } = useCompany();
+  // 사용자 상태 관리
+  const [users, setUsers] = useState<Member[]>([]);
+  // 부서 상태 관리
+  const [departments, setDepartments] = useState<Department[]>([]);
+  // 현재 활성화된 탭
+  const [activeTab, setActiveTab] = useState<'users' | 'departments'>('users');
+  // 모달 상태 관리
+  const [showUserModal, setShowUserModal] = useState(false);
+  const [showDepartmentModal, setShowDepartmentModal] = useState(false);
+  const [editingUser, setEditingUser] = useState<Member | null>(null);
+  const [editingDepartment, setEditingDepartment] = useState<Department | null>(null);
+  // 사용자 폼 상태
+  const [userForm, setUserForm] = useState<MemberRegisterRequest>({
+    name: '',
+    email: '',
+    position: '',
+    loginId: '',
+    password: '',
+    phoneNumber: '',
+    departmentId: 0,
+    companyCode: ''
+  });
+  // 부서 폼 상태
+  const [departmentForm, setDepartmentForm] = useState<DepartmentRegisterRequest>({
+    companyCode: '',
+    departmentName: ''
+  });
+  // 폼 에러 상태
+  const [userFormErrors, setUserFormErrors] = useState<Record<string, string>>({});
+  const [departmentFormErrors, setDepartmentFormErrors] = useState<Record<string, string>>({});
+  // 직책 목록
+  const [positions, setPositions] = useState<string[]>([]);
+  // 에러 상태 관리
+  const [error, setError] = useState<string | null>(null);
+
+  // 초기 데이터 로드
+  useEffect(() => {
+    const loadInitialData = async () => {
+      try {
+        const storedCompanyCode = localStorage.getItem('companyCode');
+        console.log('Stored company code:', storedCompanyCode);
+        
+        if (!storedCompanyCode) {
+          setError('회사 코드가 없습니다. 다시 로그인해주세요.');
+          return;
+        }
+
+        const [usersResponse, departmentsResponse, positionsResponse] = await Promise.all([
+          getMembers(storedCompanyCode as string),
+          getDepartments(storedCompanyCode as string),
+          getPositions()
+        ]);
+
+        console.log('API Responses:', {
+          users: usersResponse,
+          departments: departmentsResponse,
+          positions: positionsResponse
+        });
+
+        setUsers(Array.isArray(usersResponse) ? usersResponse : []);
+        setDepartments(Array.isArray(departmentsResponse) ? departmentsResponse : []);
+        setPositions(Array.isArray(positionsResponse) ? positionsResponse : []);
+      } catch (error) {
+        console.error('Error loading initial data:', error);
+        setError('데이터를 불러오는데 실패했습니다.');
+      }
+    };
+
+    loadInitialData();
+  }, []);
+
+  // 사용자 추가/수정 모달 열기
+  const openUserModal = (user?: Member) => {
+    if (user) {
+      setEditingUser(user);
+      setUserForm({
+        name: user.name,
+        email: user.email,
+        position: user.position,
+        loginId: user.login_id,
+        password: '', // 수정 시에는 비밀번호를 비워둠
+        phoneNumber: user.phoneNumber,
+        departmentId: user.departmentId,
+        companyCode: companyCode as string
+      });
+    } else {
+      setEditingUser(null);
+      setUserForm({
+        name: '',
+        email: '',
+        position: '',
+        loginId: '',
+        password: '',
+        phoneNumber: '',
+        departmentId: 0,
+        companyCode: companyCode as string
+      });
+    }
+    setUserFormErrors({});
+    setShowUserModal(true);
+  };
+
+  // 부서 추가/수정 모달 열기
+  const openDepartmentModal = (department?: Department) => {
+    if (department) {
+      setEditingDepartment(department);
+      setDepartmentForm({
+        companyCode: companyCode as string,
+        departmentName: department.departmentName
+      });
+    } else {
+      setEditingDepartment(null);
+      setDepartmentForm({
+        companyCode: companyCode as string,
+        departmentName: ''
+      });
+    }
+    setDepartmentFormErrors({});
+    setShowDepartmentModal(true);
+  };
+
+  // 사용자 폼 변경 핸들러
+  const handleUserFormChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+    const { name, value } = e.target;
+    setUserForm(prev => ({ ...prev, [name]: value }));
+    // 실시간 유효성 검사
+    validateUserField(name, value);
+  };
+
+  // 부서 폼 변경 핸들러
+  const handleDepartmentFormChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+    const { name, value } = e.target;
+    setDepartmentForm(prev => ({ ...prev, [name]: value }));
+    // 실시간 유효성 검사
+    validateDepartmentField(name, value);
+  };
+
+  // 사용자 필드 유효성 검사
+  const validateUserField = (name: string, value: string) => {
+    let error = '';
+    switch (name) {
+      case 'name':
+        if (!value) error = '이름은 필수 값입니다.';
+        break;
+      case 'email':
+        if (!value) error = '이메일은 필수 값입니다.';
+        else if (!/\S+@\S+\.\S+/.test(value)) error = '유효한 이메일 형식이 아닙니다.';
+        break;
+      case 'position':
+        if (!value) error = '직책은 필수 값입니다.';
+        break;
+      case 'loginId':
+        if (!value) error = '아이디는 필수 값입니다.';
+        break;
+      case 'password':
+        if (!editingUser && !value) error = '비밀번호는 필수 값입니다.';
+        else if (value && value.length < 4) error = '비밀번호는 4자리 이상이어야합니다.';
+        break;
+      case 'phoneNumber':
+        if (!value) error = '전화번호는 필수 값입니다.';
+        break;
+      case 'departmentId':
+        if (!value) error = '부서는 필수 값입니다.';
+        break;
+      default:
+        break;
+    }
+    setUserFormErrors(prev => ({ ...prev, [name]: error }));
+    return !error;
+  };
+
+  // 부서 필드 유효성 검사
+  const validateDepartmentField = (name: string, value: string) => {
+    let error = '';
+    if (name === 'departmentName' && !value) {
+      error = '부서명은 필수 값입니다.';
+    }
+    setDepartmentFormErrors(prev => ({ ...prev, [name]: error }));
+    return !error;
+  };
+
+  // 사용자 폼 전체 유효성 검사
+  const validateUserForm = () => {
+    const fields = ['name', 'email', 'position', 'loginId', 'phoneNumber', 'departmentId'];
+    let isValid = true;
+    fields.forEach(field => {
+      const value = userForm[field as keyof MemberRegisterRequest]?.toString() || '';
+      if (!validateUserField(field, value)) {
+        isValid = false;
+      }
+    });
+    if (!editingUser && !validateUserField('password', userForm.password)) {
+      isValid = false;
+    }
+    return isValid;
+  };
+
+  // 부서 폼 전체 유효성 검사
+  const validateDepartmentForm = () => {
+    return validateDepartmentField('departmentName', departmentForm.departmentName);
+  };
+
+  // 사용자 저장
+  const saveUser = async () => {
+    if (!validateUserForm() || !companyCode) {
+      setError('회사 코드가 없습니다. 다시 로그인해주세요.');
+      return;
+    }
+    try {
+      if (editingUser) {
+        const updateRequest: MemberUpdateRequest = {
+          id: editingUser.id,
+          name: userForm.name,
+          email: userForm.email,
+          position: userForm.position,
+          loginId: userForm.loginId,
+          phoneNumber: userForm.phoneNumber,
+          departmentId: userForm.departmentId,
+          companyCode: companyCode as string
+        };
+        const updatedUser = await updateMember(editingUser.id, updateRequest);
+        setUsers(users.map(user => user.id === editingUser.id ? updatedUser : user));
+      } else {
+        const registerRequest: MemberRegisterRequest = {
+          ...userForm,
+          companyCode: companyCode as string
+        };
+        await registerMember(registerRequest);
+        const updatedUsers = await getMembers(companyCode as string);
+        setUsers(updatedUsers);
+      }
+      setShowUserModal(false);
+      setError(null);
+    } catch (error) {
+      const errorMessage = handleApiError(error);
+      setError(errorMessage);
+      console.error('Failed to save user:', error);
+    }
+  };
+
+  // 부서 저장
+  const saveDepartment = async () => {
+    if (!validateDepartmentForm() || !companyCode) {
+      setError('회사 코드가 없습니다. 다시 로그인해주세요.');
+      return;
+    }
+    try {
+      if (editingDepartment) {
+        const updateRequest: DepartmentUpdateRequest = {
+          departmentId: editingDepartment.departmentId,
+          companyCode: companyCode as string,
+          departmentName: departmentForm.departmentName
+        };
+        const updatedDepartment = await updateDepartment(editingDepartment.departmentId, updateRequest);
+        setDepartments(departments.map(dept => 
+          dept.departmentId === editingDepartment.departmentId ? updatedDepartment : dept
+        ));
+      } else {
+        const registerRequest: DepartmentRegisterRequest = {
+          ...departmentForm,
+          companyCode: companyCode as string
+        };
+        await registerDepartment(registerRequest);
+        const updatedDepartments = await getDepartments(companyCode as string);
+        setDepartments(updatedDepartments);
+      }
+      setShowDepartmentModal(false);
+      setError(null);
+    } catch (error) {
+      const errorMessage = handleApiError(error);
+      setError(errorMessage);
+      console.error('Failed to save department:', error);
+    }
+  };
+
+  // 사용자 삭제
+  const deleteUser = async (id: number) => {
+    if (window.confirm('정말로 이 사용자를 삭제하시겠습니까?')) {
+      try {
+        await deleteMember(id);
+        setUsers(users.filter(user => user.id !== id));
+        setError(null);
+      } catch (error) {
+        const errorMessage = handleApiError(error);
+        setError(errorMessage);
+        console.error('Failed to delete user:', error);
+      }
+    }
+  };
+
+  // 부서 삭제
+  const deleteDepartment = async (id: number) => {
+    if (window.confirm('정말로 이 부서를 삭제하시겠습니까?')) {
+      try {
+        await deleteDepartment(id);
+        setDepartments(departments.filter(dept => dept.departmentId !== id));
+        setError(null);
+      } catch (error) {
+        const errorMessage = handleApiError(error);
+        setError(errorMessage);
+        console.error('Failed to delete department:', error);
+      }
+    }
+  };
+
+  return (
+    <div className="min-h-screen bg-gray-50">
+      {/* 에러 메시지 */}
+      {error && (
+        <div className="fixed top-4 right-4 bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded z-50">
+          <span className="block sm:inline">{error}</span>
+          <button
+            className="absolute top-0 bottom-0 right-0 px-4 py-3"
+            onClick={() => setError(null)}
+          >
+            <span className="sr-only">닫기</span>
+            <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+        </div>
+      )}
+
+      {/* 메인 콘텐츠 */}
+      <main className="flex-1 p-6">
+        {/* 경로 표시 */}
+        <div className="flex items-center text-sm text-gray-500 mb-2">
+          <span>관리</span>
+          <i className="fas fa-chevron-right mx-2 text-xs"></i>
+          <span className="text-[#2ECC71]">사용자 & 부서</span>
+        </div>
+
+        {/* 페이지 헤더 */}
+        <div className="mb-6">
+          <h1 className="text-2xl font-bold text-gray-800">사용자 & 부서</h1>
+          <p className="text-gray-600 mt-1">회사 사용자, 역할, 권한 및 부서 구조 관리</p>
+        </div>
+
+        {/* 탭 */}
+        <div className="bg-white rounded-md shadow-sm mb-6">
+          <div className="flex border-b">
+            <button
+              className={`px-6 py-3 text-sm font-medium ${activeTab === 'users' ? 'text-[#2ECC71] border-b-2 border-[#2ECC71]' : 'text-gray-600'}`}
+              onClick={() => setActiveTab('users')}
+            >
+              사용자
+            </button>
+            <button
+              className={`px-6 py-3 text-sm font-medium ${activeTab === 'departments' ? 'text-[#2ECC71] border-b-2 border-[#2ECC71]' : 'text-gray-600'}`}
+              onClick={() => setActiveTab('departments')}
+            >
+              부서 ({departments.length})
+            </button>
+          </div>
+        </div>
+
+        {/* 사용자 관리 */}
+        {activeTab === 'users' && (
+          <div className="bg-white rounded-md shadow-sm p-6">
+            <div className="flex justify-between items-center mb-6">
+              <h2 className="text-lg font-semibold text-gray-800">사용자 관리</h2>
+              <button
+                className="bg-[#2ECC71] text-white px-4 py-2 rounded-md text-sm font-medium flex items-center cursor-pointer !rounded-button whitespace-nowrap"
+                onClick={() => openUserModal()}
+              >
+                <i className="fas fa-plus mr-2"></i>
+                사용자 추가
+              </button>
+            </div>
+
+            {/* 사용자 테이블 */}
+            <div className="overflow-x-auto">
+              <table className="min-w-full divide-y divide-gray-200">
+                <thead className="bg-gray-50">
+                  <tr>
+                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">이름</th>
+                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">이메일</th>
+                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">직책</th>
+                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">부서</th>
+                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">전화번호</th>
+                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">상태</th>
+                    <th scope="col" className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">액션</th>
+                  </tr>
+                </thead>
+                <tbody className="bg-white divide-y divide-gray-200">
+                  {users.map(user => (
+                    <tr key={user.id}>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="flex items-center">
+                          <div className="flex-shrink-0 h-10 w-10 bg-gray-200 rounded-full flex items-center justify-center">
+                            <span className="text-gray-600 font-medium">{user.name.substring(0, 2)}</span>
+                          </div>
+                          <div className="ml-4">
+                            <div className="text-sm font-medium text-gray-900">{user.name}</div>
+                            <div className="text-sm text-gray-500">{user.login_id}</div>
+                          </div>
+                        </div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{user.email}</td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{user.position}</td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{user.departmentName}</td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{user.phoneNumber}</td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">
+                          활성
+                        </span>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                        <button
+                          className="text-[#2ECC71] hover:text-[#27ae60] mr-3 cursor-pointer !rounded-button whitespace-nowrap"
+                          onClick={() => openUserModal(user)}
+                        >
+                          <i className="fas fa-edit"></i>
+                        </button>
+                        <button
+                          className="text-red-500 hover:text-red-700 cursor-pointer !rounded-button whitespace-nowrap"
+                          onClick={() => deleteUser(user.id)}
+                        >
+                          <i className="fas fa-trash-alt"></i>
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        )}
+
+        {/* 부서 관리 */}
+        {activeTab === 'departments' && (
+          <div className="bg-white rounded-md shadow-sm p-6">
+            <div className="flex justify-between items-center mb-6">
+              <h2 className="text-lg font-semibold text-gray-800">부서 관리</h2>
+              <button
+                className="bg-[#2ECC71] text-white px-4 py-2 rounded-md text-sm font-medium flex items-center cursor-pointer !rounded-button whitespace-nowrap"
+                onClick={() => openDepartmentModal()}
+              >
+                <i className="fas fa-plus mr-2"></i>
+                부서 추가
+              </button>
+            </div>
+
+            {/* 부서 카드 그리드 */}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {departments.map(department => (
+                <div key={department.departmentId} className="bg-white border border-gray-200 rounded-lg p-5 shadow-sm hover:shadow-md transition-shadow">
+                  <div className="flex justify-between items-start mb-4">
+                    <div className="flex items-center">
+                      <div className="p-2 rounded-md bg-[#ebfaf0] text-[#2ECC71] mr-3">
+                        <i className="fas fa-building"></i>
+                      </div>
+                      <h3 className="text-lg font-medium text-gray-800">{department.departmentName}</h3>
+                    </div>
+                    <div className="flex">
+                      <button
+                        className="text-[#2ECC71] hover:text-[#27ae60] mr-2 cursor-pointer !rounded-button whitespace-nowrap"
+                        onClick={() => openDepartmentModal(department)}
+                      >
+                        <i className="fas fa-edit"></i>
+                      </button>
+                      <button
+                        className="text-red-500 hover:text-red-700 cursor-pointer !rounded-button whitespace-nowrap"
+                        onClick={() => deleteDepartment(department.departmentId)}
+                      >
+                        <i className="fas fa-trash-alt"></i>
+                      </button>
+                    </div>
+                  </div>
+                  <div className="flex items-center text-sm text-gray-500">
+                    <i className="fas fa-users mr-2"></i>
+                    <span>구성원 {department.numberOfEmployees}명</span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+      </main>
+
+      {/* 사용자 추가/수정 모달 */}
+      {showUserModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg w-full max-w-2xl mx-4">
+            <div className="p-6 border-b">
+              <h2 className="text-xl font-semibold text-gray-800">
+                {editingUser ? '사용자 수정' : '사용자 추가'}
+              </h2>
+            </div>
+            <div className="p-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    이름 <span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    type="text"
+                    name="name"
+                    value={userForm.name}
+                    onChange={handleUserFormChange}
+                    className={`w-full px-3 py-2 border ${userFormErrors.name ? 'border-red-500' : 'border-gray-300'} rounded-md focus:outline-none focus:ring-2 focus:ring-[#2ECC71] focus:border-transparent text-sm`}
+                  />
+                  {userFormErrors.name && (
+                    <p className="mt-1 text-xs text-red-500">{userFormErrors.name}</p>
+                  )}
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    이메일 <span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    type="email"
+                    name="email"
+                    value={userForm.email}
+                    onChange={handleUserFormChange}
+                    className={`w-full px-3 py-2 border ${userFormErrors.email ? 'border-red-500' : 'border-gray-300'} rounded-md focus:outline-none focus:ring-2 focus:ring-[#2ECC71] focus:border-transparent text-sm`}
+                  />
+                  {userFormErrors.email && (
+                    <p className="mt-1 text-xs text-red-500">{userFormErrors.email}</p>
+                  )}
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    직책 <span className="text-red-500">*</span>
+                  </label>
+                  <select
+                    name="position"
+                    value={userForm.position}
+                    onChange={handleUserFormChange}
+                    className={`w-full px-3 py-2 border ${userFormErrors.position ? 'border-red-500' : 'border-gray-300'} rounded-md focus:outline-none focus:ring-2 focus:ring-[#2ECC71] focus:border-transparent text-sm`}
+                  >
+                    <option value="">직책 선택</option>
+                    {positions.map(position => (
+                      <option key={position} value={position}>{position}</option>
+                    ))}
+                  </select>
+                  {userFormErrors.position && (
+                    <p className="mt-1 text-xs text-red-500">{userFormErrors.position}</p>
+                  )}
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    아이디 <span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    type="text"
+                    name="loginId"
+                    value={userForm.loginId}
+                    onChange={handleUserFormChange}
+                    className={`w-full px-3 py-2 border ${userFormErrors.loginId ? 'border-red-500' : 'border-gray-300'} rounded-md focus:outline-none focus:ring-2 focus:ring-[#2ECC71] focus:border-transparent text-sm`}
+                  />
+                  {userFormErrors.loginId && (
+                    <p className="mt-1 text-xs text-red-500">{userFormErrors.loginId}</p>
+                  )}
+                </div>
+                {!editingUser && (
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      비밀번호 <span className="text-red-500">*</span>
+                    </label>
+                    <input
+                      type="password"
+                      name="password"
+                      value={userForm.password}
+                      onChange={handleUserFormChange}
+                      className={`w-full px-3 py-2 border ${userFormErrors.password ? 'border-red-500' : 'border-gray-300'} rounded-md focus:outline-none focus:ring-2 focus:ring-[#2ECC71] focus:border-transparent text-sm`}
+                    />
+                    {userFormErrors.password && (
+                      <p className="mt-1 text-xs text-red-500">{userFormErrors.password}</p>
+                    )}
+                  </div>
+                )}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    전화번호 <span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    type="text"
+                    name="phoneNumber"
+                    value={userForm.phoneNumber}
+                    onChange={handleUserFormChange}
+                    className={`w-full px-3 py-2 border ${userFormErrors.phoneNumber ? 'border-red-500' : 'border-gray-300'} rounded-md focus:outline-none focus:ring-2 focus:ring-[#2ECC71] focus:border-transparent text-sm`}
+                  />
+                  {userFormErrors.phoneNumber && (
+                    <p className="mt-1 text-xs text-red-500">{userFormErrors.phoneNumber}</p>
+                  )}
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    부서 <span className="text-red-500">*</span>
+                  </label>
+                  <select
+                    name="departmentId"
+                    value={userForm.departmentId}
+                    onChange={handleUserFormChange}
+                    className={`w-full px-3 py-2 border ${userFormErrors.departmentId ? 'border-red-500' : 'border-gray-300'} rounded-md focus:outline-none focus:ring-2 focus:ring-[#2ECC71] focus:border-transparent text-sm`}
+                  >
+                    <option value="">부서 선택</option>
+                    {departments.map(dept => (
+                      <option key={dept.departmentId} value={dept.departmentId}>{dept.departmentName}</option>
+                    ))}
+                  </select>
+                  {userFormErrors.departmentId && (
+                    <p className="mt-1 text-xs text-red-500">{userFormErrors.departmentId}</p>
+                  )}
+                </div>
+              </div>
+            </div>
+            <div className="p-6 border-t bg-gray-50 flex justify-end">
+              <button
+                className="px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 mr-3 hover:bg-gray-100 cursor-pointer !rounded-button whitespace-nowrap"
+                onClick={() => setShowUserModal(false)}
+              >
+                취소
+              </button>
+              <button
+                className="px-4 py-2 bg-[#2ECC71] text-white rounded-md text-sm font-medium hover:bg-[#27ae60] cursor-pointer !rounded-button whitespace-nowrap"
+                onClick={saveUser}
+              >
+                저장
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* 부서 추가/수정 모달 */}
+      {showDepartmentModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg w-full max-w-md mx-4">
+            <div className="p-6 border-b">
+              <h2 className="text-xl font-semibold text-gray-800">
+                {editingDepartment ? '부서 수정' : '부서 추가'}
+              </h2>
+            </div>
+            <div className="p-6">
+              <div className="mb-4">
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  부서명 <span className="text-red-500">*</span>
+                </label>
+                <input
+                  type="text"
+                  name="departmentName"
+                  value={departmentForm.departmentName}
+                  onChange={handleDepartmentFormChange}
+                  className={`w-full px-3 py-2 border ${departmentFormErrors.departmentName ? 'border-red-500' : 'border-gray-300'} rounded-md focus:outline-none focus:ring-2 focus:ring-[#2ECC71] focus:border-transparent text-sm`}
+                />
+                {departmentFormErrors.departmentName && (
+                  <p className="mt-1 text-xs text-red-500">{departmentFormErrors.departmentName}</p>
+                )}
+              </div>
+            </div>
+            <div className="p-6 border-t bg-gray-50 flex justify-end">
+              <button
+                className="px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 mr-3 hover:bg-gray-100 cursor-pointer !rounded-button whitespace-nowrap"
+                onClick={() => setShowDepartmentModal(false)}
+              >
+                취소
+              </button>
+              <button
+                className="px-4 py-2 bg-[#2ECC71] text-white rounded-md text-sm font-medium hover:bg-[#27ae60] cursor-pointer !rounded-button whitespace-nowrap"
+                onClick={saveDepartment}
+              >
+                저장
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
+
+export default UserManagementPage; 

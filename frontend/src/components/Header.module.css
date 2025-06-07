@@ -1,1 +1,185 @@
-/* Header 스타일 (임시) */ 
+.header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1rem 2rem;
+    background-color: #ffffff;
+    border-bottom: 1px solid #e5e7eb;
+    box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1);
+    position: sticky;
+    top: 0;
+    z-index: 40;
+  }
+  
+  .logoSection {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+  }
+  
+  .logo {
+    width: 2.5rem;
+    height: 2.5rem;
+    object-fit: contain;
+  }
+  
+  .title {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: #059669;
+    line-height: 1.2;
+  }
+  
+  .subtitle {
+    font-size: 0.75rem;
+    color: #6b7280;
+    font-weight: 500;
+  }
+  
+  .navMenu {
+    display: flex;
+    gap: 1.5rem;
+    align-items: center;
+  }
+  
+  .navItem {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 0.5rem 1rem;
+    text-decoration: none;
+    color: #6b7280;
+    border-radius: 0.5rem;
+    transition: all 0.2s ease-in-out;
+    font-size: 0.875rem;
+    font-weight: 500;
+  }
+  
+  .navItem:hover {
+    color: #059669;
+    background-color: #f0fdf4;
+  }
+  
+  .navIcon {
+    font-size: 1.25rem;
+    margin-bottom: 0.25rem;
+  }
+  
+  .userInfo {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.5rem;
+    border-radius: 0.5rem;
+    transition: background-color 0.2s ease-in-out;
+    cursor: pointer;
+  }
+  
+  .userInfo:hover {
+    background-color: #f9fafb;
+  }
+  
+  .avatar {
+    width: 2.5rem;
+    height: 2.5rem;
+    background-color: #059669;
+    color: white;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 600;
+    font-size: 0.875rem;
+  }
+  
+  .userName {
+    font-weight: 600;
+    color: #1f2937;
+    font-size: 0.875rem;
+  }
+  
+  .userEmail {
+    font-size: 0.75rem;
+    color: #6b7280;
+  }
+
+  .logoutButton {
+    margin-top: 8px;
+    background: none;
+    border: 1px solid #059669; /* 연한 초록 */
+    color: #059669; /* tailwind green-500 */
+    padding: 4px 10px;
+    border-radius: 4px;
+    font-size: 0.875rem;
+    cursor: pointer;
+    transition: background 0.2s ease, color 0.2s ease;
+  }
+  
+  .logoutButton:hover {
+    background-color: #059669;
+    color: white;
+  }
+  
+  .userInfo {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem; /* 텍스트와 버튼 사이 간격 */
+    padding: 0.5rem;
+    border-radius: 0.5rem;
+    transition: background-color 0.2s ease-in-out;
+    cursor: pointer;
+  }
+  
+  /* 모바일 반응형 */
+  @media (max-width: 768px) {
+    .header {
+      padding: 1rem;
+    }
+    
+    .navMenu {
+      display: none;
+    }
+    
+    .logoSection {
+      gap: 0.5rem;
+    }
+    
+    .title {
+      font-size: 1.25rem;
+    }
+    
+    .subtitle {
+      display: none;
+    }
+    
+    .userInfo {
+      gap: 0.5rem;
+    }
+    
+    .userName,
+    .userEmail {
+      display: none;
+    }
+  }
+  
+  @media (max-width: 480px) {
+    .header {
+      padding: 0.75rem;
+    }
+    
+    .logo {
+      width: 2rem;
+      height: 2rem;
+    }
+    
+    .title {
+      font-size: 1.125rem;
+    }
+    
+    .avatar {
+      width: 2rem;
+      height: 2rem;
+      font-size: 0.75rem;
+    }
+    
+  }
