@@ -28,31 +28,31 @@ export interface MemberUpdateRequest extends Omit<MemberRegisterRequest, 'passwo
 }
 
 export const getMembers = async (companyCode: string) => {
-  const response = await axiosInstance.get(`/members?companyCode=${companyCode}`);
+  const response = await axiosInstance.get(`/api/members?companyCode=${companyCode}`);
   return response.data;
 };
 
 export const getMember = async (id: number) => {
-  const response = await axiosInstance.get(`/members/${id}`);
+  const response = await axiosInstance.get(`/api/members/${id}`);
   return response.data;
 };
 
 export const registerMember = async (data: MemberRegisterRequest) => {
-  const response = await axiosInstance.post('/members', data);
+  const response = await axiosInstance.post('/api/members', data);
   return response.data;
 };
 
 export const updateMember = async (id: number, data: MemberUpdateRequest) => {
-  const response = await axiosInstance.put(`/members/${id}`, data);
+  const response = await axiosInstance.put(`/api/members/${id}`, data);
   return response.data;
 };
 
 export const deleteMember = async (id: number) => {
-  const response = await axiosInstance.delete(`/members/${id}`);
+  const response = await axiosInstance.delete(`/api/members/${id}`);
   return response.data;
 };
 
 export const getPositions = async () => {
-  const response = await axiosInstance.get('/members/positions');
+  const response = await axiosInstance.get('/api/members/positions');
   return response.data;
 }; 

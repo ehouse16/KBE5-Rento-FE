@@ -11,26 +11,28 @@ export interface DepartmentRegisterRequest {
   departmentName: string;
 }
 
-export interface DepartmentUpdateRequest extends DepartmentRegisterRequest {
+export interface DepartmentUpdateRequest {
   departmentId: number;
+  departmentName: string;
+  companyCode: string;
 }
 
 export const getDepartments = async (companyCode: string) => {
-  const response = await axiosInstance.get(`/departments?companyCode=${companyCode}`);
+  const response = await axiosInstance.get(`/api/departments?companyCode=${companyCode}`);
   return response.data;
 };
 
 export const registerDepartment = async (data: DepartmentRegisterRequest) => {
-  const response = await axiosInstance.post('/departments', data);
+  const response = await axiosInstance.post(`/api/departments`, data);
   return response.data;
 };
 
-export const updateDepartment = async (id: number, data: DepartmentUpdateRequest) => {
-  const response = await axiosInstance.put(`/departments/${id}`, data);
+export const updateDepartment = async (data: DepartmentUpdateRequest) => {
+  const response = await axiosInstance.put(`/api/departments/${data.departmentId}`, data);
   return response.data;
 };
 
-export const deleteDepartment = async (id: number) => {
-  const response = await axiosInstance.delete(`/departments/${id}`);
+export const deleteDepartment = async (companyCode: string, departmentId: number) => {
+  const response = await axiosInstance.delete(`/api/departments/${departmentId}?companyCode=${companyCode}`);
   return response.data;
 }; 

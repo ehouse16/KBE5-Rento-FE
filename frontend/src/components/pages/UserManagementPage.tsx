@@ -30,7 +30,7 @@ const UserManagementPage: React.FC = () => {
   });
   // 부서 폼 상태
   const [departmentForm, setDepartmentForm] = useState<DepartmentRegisterRequest>({
-    companyCode: '',
+    companyCode: companyCode as string,
     departmentName: ''
   });
   // 폼 에러 상태
@@ -65,9 +65,15 @@ const UserManagementPage: React.FC = () => {
           positions: positionsResponse
         });
 
-        setUsers(Array.isArray(usersResponse) ? usersResponse : []);
-        setDepartments(Array.isArray(departmentsResponse) ? departmentsResponse : []);
-        setPositions(Array.isArray(positionsResponse) ? positionsResponse : []);
+        setUsers(Array.isArray(usersResponse.data) ? usersResponse.data : []);
+        setDepartments(Array.isArray(departmentsResponse.data) ? departmentsResponse.data : []);
+        setPositions(Array.isArray(positionsResponse.data) ? positionsResponse.data : []);
+
+        console.log('Processed data:', {
+          users: usersResponse.data,
+          departments: departmentsResponse.data,
+          positions: positionsResponse.data
+        });
       } catch (error) {
         console.error('Error loading initial data:', error);
         setError('데이터를 불러오는데 실패했습니다.');
@@ -235,7 +241,7 @@ const UserManagementPage: React.FC = () => {
         };
         await registerMember(registerRequest);
         const updatedUsers = await getMembers(companyCode as string);
-        setUsers(updatedUsers);
+        setUsers(updatedUsers.data || []);
       }
       setShowUserModal(false);
       setError(null);
@@ -256,21 +262,20 @@ const UserManagementPage: React.FC = () => {
       if (editingDepartment) {
         const updateRequest: DepartmentUpdateRequest = {
           departmentId: editingDepartment.departmentId,
-          companyCode: companyCode as string,
-          departmentName: departmentForm.departmentName
+          departmentName: departmentForm.departmentName,
+          companyCode: companyCode
         };
-        const updatedDepartment = await updateDepartment(editingDepartment.departmentId, updateRequest);
-        setDepartments(departments.map(dept => 
-          dept.departmentId === editingDepartment.departmentId ? updatedDepartment : dept
-        ));
+        await updateDepartment(updateRequest);
+        const updatedDepartments = await getDepartments(companyCode);
+        setDepartments(updatedDepartments.data || []);
       } else {
         const registerRequest: DepartmentRegisterRequest = {
-          ...departmentForm,
-          companyCode: companyCode as string
+          companyCode: companyCode,
+          departmentName: departmentForm.departmentName
         };
         await registerDepartment(registerRequest);
-        const updatedDepartments = await getDepartments(companyCode as string);
-        setDepartments(updatedDepartments);
+        const updatedDepartments = await getDepartments(companyCode);
+        setDepartments(updatedDepartments.data || []);
       }
       setShowDepartmentModal(false);
       setError(null);
@@ -561,23 +566,22 @@ const UserManagementPage: React.FC = () => {
                     <p className="mt-1 text-xs text-red-500">{userFormErrors.loginId}</p>
                   )}
                 </div>
-                {!editingUser && (
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      비밀번호 <span className="text-red-500">*</span>
-                    </label>
-                    <input
-                      type="password"
-                      name="password"
-                      value={userForm.password}
-                      onChange={handleUserFormChange}
-                      className={`w-full px-3 py-2 border ${userFormErrors.password ? 'border-red-500' : 'border-gray-300'} rounded-md focus:outline-none focus:ring-2 focus:ring-[#2ECC71] focus:border-transparent text-sm`}
-                    />
-                    {userFormErrors.password && (
-                      <p className="mt-1 text-xs text-red-500">{userFormErrors.password}</p>
-                    )}
-                  </div>
-                )}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    비밀번호 {!editingUser && <span className="text-red-500">*</span>}
+                  </label>
+                  <input
+                    type="password"
+                    name="password"
+                    value={userForm.password}
+                    onChange={handleUserFormChange}
+                    className={`w-full px-3 py-2 border ${userFormErrors.password ? 'border-red-500' : 'border-gray-300'} rounded-md focus:outline-none focus:ring-2 focus:ring-[#2ECC71] focus:border-transparent text-sm`}
+                    placeholder={editingUser ? "변경하려면 입력하세요" : ""}
+                  />
+                  {userFormErrors.password && (
+                    <p className="mt-1 text-xs text-red-500">{userFormErrors.password}</p>
+                  )}
+                </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
                     전화번호 <span className="text-red-500">*</span>
