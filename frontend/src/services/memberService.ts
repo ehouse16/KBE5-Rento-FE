@@ -9,7 +9,6 @@ export interface Member {
   phoneNumber: string;
   departmentId: number;
   departmentName: string;
-  status: 'ACTIVE' | 'INACTIVE';
 }
 
 export interface MemberRegisterRequest {

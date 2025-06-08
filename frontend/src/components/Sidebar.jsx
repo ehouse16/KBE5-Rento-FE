@@ -79,7 +79,7 @@ const Sidebar = ({ activeTab, setActiveTab }) => {
       </div>
       
       {/* 하단 도움말 섹션 */}
-      <div className="absolute bottom-4 left-4 right-4">
+      <div className="mb-4 mx-4">
         <div className="bg-blue-50 rounded-lg p-4">
           <div className="flex items-center mb-2">
             <i className="fas fa-question-circle text-blue-500 mr-2"></i>

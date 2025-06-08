@@ -5,7 +5,8 @@ import { handleApiError } from '../../utils/errorHandler';
 import { useCompany } from '../../contexts/CompanyContext';
 
 const UserManagementPage: React.FC = () => {
-  const { companyCode } = useCompany();
+  const { companyCode: contextCompanyCode } = useCompany();
+  const companyCode = contextCompanyCode || localStorage.getItem('companyCode') || '';
   // 사용자 상태 관리
   const [users, setUsers] = useState<Member[]>([]);
   // 부서 상태 관리
@@ -26,11 +27,11 @@ const UserManagementPage: React.FC = () => {
     password: '',
     phoneNumber: '',
     departmentId: 0,
-    companyCode: ''
+    companyCode: companyCode
   });
   // 부서 폼 상태
   const [departmentForm, setDepartmentForm] = useState<DepartmentRegisterRequest>({
-    companyCode: companyCode as string,
+    companyCode: companyCode,
     departmentName: ''
   });
   // 폼 에러 상태
@@ -40,6 +41,10 @@ const UserManagementPage: React.FC = () => {
   const [positions, setPositions] = useState<string[]>([]);
   // 에러 상태 관리
   const [error, setError] = useState<string | null>(null);
+  // 중복확인 상태
+  const [isIdChecked, setIsIdChecked] = useState(false);
+  const [isEmailChecked, setIsEmailChecked] = useState(false);
+  const [isPhoneChecked, setIsPhoneChecked] = useState(false);
 
   // 초기 데이터 로드
   useEffect(() => {
@@ -95,7 +100,7 @@ const UserManagementPage: React.FC = () => {
         password: '', // 수정 시에는 비밀번호를 비워둠
         phoneNumber: user.phoneNumber,
         departmentId: user.departmentId,
-        companyCode: companyCode as string
+        companyCode: companyCode
       });
     } else {
       setEditingUser(null);
@@ -107,7 +112,7 @@ const UserManagementPage: React.FC = () => {
         password: '',
         phoneNumber: '',
         departmentId: 0,
-        companyCode: companyCode as string
+        companyCode: companyCode
       });
     }
     setUserFormErrors({});
@@ -119,13 +124,13 @@ const UserManagementPage: React.FC = () => {
     if (department) {
       setEditingDepartment(department);
       setDepartmentForm({
-        companyCode: companyCode as string,
+        companyCode: companyCode,
         departmentName: department.departmentName
       });
     } else {
       setEditingDepartment(null);
       setDepartmentForm({
-        companyCode: companyCode as string,
+        companyCode: companyCode,
         departmentName: ''
       });
     }
@@ -137,8 +142,10 @@ const UserManagementPage: React.FC = () => {
   const handleUserFormChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
     setUserForm(prev => ({ ...prev, [name]: value }));
-    // 실시간 유효성 검사
     validateUserField(name, value);
+    if (name === 'loginId') setIsIdChecked(false);
+    if (name === 'email') setIsEmailChecked(false);
+    if (name === 'phoneNumber') setIsPhoneChecked(false);
   };
 
   // 부서 폼 변경 핸들러
@@ -214,6 +221,98 @@ const UserManagementPage: React.FC = () => {
     return validateDepartmentField('departmentName', departmentForm.departmentName);
   };
 
+  // 중복확인 함수들
+  const checkIdDuplicate = async () => {
+    if (!userForm.loginId) {
+      alert('아이디를 입력하세요.');
+      return;
+    }
+    try {
+      const accessToken = localStorage.getItem('accessToken');
+      const refreshToken = localStorage.getItem('refreshToken');
+      const res = await fetch(`/api/members/check-id/${userForm.loginId}`, {
+        headers: {
+          'accesstoken': accessToken ?? '',
+          'refreshtoken': refreshToken ?? '',
+          'Content-Type': 'application/json'
+        },
+        credentials: 'include'
+      });
+      const data = await res.json();
+      if (data.data) {
+        setIsIdChecked(true);
+        alert('사용 가능한 아이디입니다.');
+      } else {
+        setIsIdChecked(false);
+        alert('이미 사용 중인 아이디입니다.');
+      }
+    } catch {
+      setIsIdChecked(false);
+      alert('중복확인 실패');
+    }
+  };
+  const checkEmailDuplicate = async () => {
+    if (!userForm.email) {
+      alert('이메일을 입력하세요.');
+      return;
+    }
+    try {
+      const accessToken = localStorage.getItem('accessToken');
+      const refreshToken = localStorage.getItem('refreshToken');
+      const res = await fetch(`/api/members/check-email/${userForm.email}`, {
+        headers: {
+          'accesstoken': accessToken ?? '',
+          'refreshtoken': refreshToken ?? '',
+          'Content-Type': 'application/json'
+        },
+        credentials: 'include'
+      });
+      const data = await res.json();
+      if (data.data) {
+        setIsEmailChecked(true);
+        alert('사용 가능한 이메일입니다.');
+      } else {
+        setIsEmailChecked(false);
+        alert('이미 사용 중인 이메일입니다.');
+      }
+    } catch {
+      setIsEmailChecked(false);
+      alert('중복확인 실패');
+    }
+  };
+  const checkPhoneDuplicate = async () => {
+    if (!userForm.phoneNumber) {
+      alert('전화번호를 입력하세요.');
+      return;
+    }
+    try {
+      const accessToken = localStorage.getItem('accessToken');
+      const refreshToken = localStorage.getItem('refreshToken');
+      const res = await fetch(`/api/members/check-phone/${userForm.phoneNumber}`, {
+        headers: {
+          'accesstoken': accessToken ?? '',
+          'refreshtoken': refreshToken ?? '',
+          'Content-Type': 'application/json'
+        },
+        credentials: 'include'
+      });
+      const data = await res.json();
+      if (data.data) {
+        setIsPhoneChecked(true);
+        alert('사용 가능한 전화번호입니다.');
+      } else {
+        setIsPhoneChecked(false);
+        alert('이미 사용 중인 전화번호입니다.');
+      }
+    } catch {
+      setIsPhoneChecked(false);
+      alert('중복확인 실패');
+    }
+  };
+
+  // 저장 버튼 활성화 조건
+  const isSaveEnabled = editingUser ? true : (isIdChecked && isEmailChecked && isPhoneChecked);
+
   // 사용자 저장
   const saveUser = async () => {
     if (!validateUserForm() || !companyCode) {
@@ -230,17 +329,18 @@ const UserManagementPage: React.FC = () => {
           loginId: userForm.loginId,
           phoneNumber: userForm.phoneNumber,
           departmentId: userForm.departmentId,
-          companyCode: companyCode as string
+          companyCode: companyCode
         };
-        const updatedUser = await updateMember(editingUser.id, updateRequest);
-        setUsers(users.map(user => user.id === editingUser.id ? updatedUser : user));
+        await updateMember(editingUser.id, updateRequest);
+        const updatedUsers = await getMembers(companyCode);
+        setUsers(updatedUsers.data || []);
       } else {
         const registerRequest: MemberRegisterRequest = {
           ...userForm,
-          companyCode: companyCode as string
+          companyCode: companyCode
         };
         await registerMember(registerRequest);
-        const updatedUsers = await getMembers(companyCode as string);
+        const updatedUsers = await getMembers(companyCode);
         setUsers(updatedUsers.data || []);
       }
       setShowUserModal(false);
@@ -248,6 +348,7 @@ const UserManagementPage: React.FC = () => {
     } catch (error) {
       const errorMessage = handleApiError(error);
       setError(errorMessage);
+      alert(errorMessage);
       console.error('Failed to save user:', error);
     }
   };
@@ -302,11 +403,16 @@ const UserManagementPage: React.FC = () => {
   };
 
   // 부서 삭제
-  const deleteDepartment = async (id: number) => {
+  const handleDeleteDepartment = async (id: number) => {
     if (window.confirm('정말로 이 부서를 삭제하시겠습니까?')) {
       try {
-        await deleteDepartment(id);
-        setDepartments(departments.filter(dept => dept.departmentId !== id));
+        if (!companyCode) {
+          setError('회사 코드가 없습니다. 다시 로그인해주세요.');
+          return;
+        }
+        await deleteDepartment(companyCode, id);
+        const updatedDepartments = await getDepartments(companyCode);
+        setDepartments(updatedDepartments.data || []);
         setError(null);
       } catch (error) {
         const errorMessage = handleApiError(error);
@@ -320,7 +426,7 @@ const UserManagementPage: React.FC = () => {
     <div className="min-h-screen bg-gray-50">
       {/* 에러 메시지 */}
       {error && (
-        <div className="fixed top-4 right-4 bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded z-50">
+        <div className="mb-4 w-full max-w-lg mx-auto bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative">
           <span className="block sm:inline">{error}</span>
           <button
             className="absolute top-0 bottom-0 right-0 px-4 py-3"
@@ -391,33 +497,27 @@ const UserManagementPage: React.FC = () => {
                     <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">직책</th>
                     <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">부서</th>
                     <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">전화번호</th>
-                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">상태</th>
                     <th scope="col" className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">액션</th>
                   </tr>
                 </thead>
                 <tbody className="bg-white divide-y divide-gray-200">
-                  {users.map(user => (
-                    <tr key={user.id}>
+                  {users.map((user, idx) => (
+                    <tr key={user.id ?? user.login_id ?? idx}>
                       <td className="px-6 py-4 whitespace-nowrap">
                         <div className="flex items-center">
                           <div className="flex-shrink-0 h-10 w-10 bg-gray-200 rounded-full flex items-center justify-center">
-                            <span className="text-gray-600 font-medium">{user.name.substring(0, 2)}</span>
+                            <span className="text-gray-600 font-medium">{user.name?.substring(0, 2) || '??'}</span>
                           </div>
                           <div className="ml-4">
-                            <div className="text-sm font-medium text-gray-900">{user.name}</div>
-                            <div className="text-sm text-gray-500">{user.login_id}</div>
+                            <div className="text-sm font-medium text-gray-900">{user.name || '이름 없음'}</div>
+                            <div className="text-sm text-gray-500">{user.login_id || 'ID 없음'}</div>
                           </div>
                         </div>
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{user.email}</td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{user.position}</td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{user.departmentName}</td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{user.phoneNumber}</td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">
-                          활성
-                        </span>
-                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{user.email || '-'}</td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{user.position || '-'}</td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{user.departmentName || '-'}</td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{user.phoneNumber || '-'}</td>
                       <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                         <button
                           className="text-[#2ECC71] hover:text-[#27ae60] mr-3 cursor-pointer !rounded-button whitespace-nowrap"
@@ -474,7 +574,7 @@ const UserManagementPage: React.FC = () => {
                       </button>
                       <button
                         className="text-red-500 hover:text-red-700 cursor-pointer !rounded-button whitespace-nowrap"
-                        onClick={() => deleteDepartment(department.departmentId)}
+                        onClick={() => handleDeleteDepartment(department.departmentId)}
                       >
                         <i className="fas fa-trash-alt"></i>
                       </button>
@@ -521,13 +621,23 @@ const UserManagementPage: React.FC = () => {
                   <label className="block text-sm font-medium text-gray-700 mb-1">
                     이메일 <span className="text-red-500">*</span>
                   </label>
-                  <input
-                    type="email"
-                    name="email"
-                    value={userForm.email}
-                    onChange={handleUserFormChange}
-                    className={`w-full px-3 py-2 border ${userFormErrors.email ? 'border-red-500' : 'border-gray-300'} rounded-md focus:outline-none focus:ring-2 focus:ring-[#2ECC71] focus:border-transparent text-sm`}
-                  />
+                  <div className="flex items-center">
+                    <input
+                      type="email"
+                      name="email"
+                      value={userForm.email}
+                      onChange={handleUserFormChange}
+                      className={`w-full px-3 py-2 border ${userFormErrors.email ? 'border-red-500' : 'border-gray-300'} rounded-md focus:outline-none focus:ring-2 focus:ring-[#2ECC71] focus:border-transparent text-sm`}
+                    />
+                    {!editingUser && (
+                      <button
+                        className="ml-2 min-w-[80px] px-3 py-1.5 bg-[#2ECC71] text-white text-sm font-medium rounded-md hover:bg-[#27ae60] focus:outline-none focus:ring-2 focus:ring-[#2ECC71] focus:ring-offset-2 leading-tight"
+                        onClick={checkEmailDuplicate}
+                      >
+                        중복 확인
+                      </button>
+                    )}
+                  </div>
                   {userFormErrors.email && (
                     <p className="mt-1 text-xs text-red-500">{userFormErrors.email}</p>
                   )}
@@ -555,44 +665,65 @@ const UserManagementPage: React.FC = () => {
                   <label className="block text-sm font-medium text-gray-700 mb-1">
                     아이디 <span className="text-red-500">*</span>
                   </label>
-                  <input
-                    type="text"
-                    name="loginId"
-                    value={userForm.loginId}
-                    onChange={handleUserFormChange}
-                    className={`w-full px-3 py-2 border ${userFormErrors.loginId ? 'border-red-500' : 'border-gray-300'} rounded-md focus:outline-none focus:ring-2 focus:ring-[#2ECC71] focus:border-transparent text-sm`}
-                  />
+                  <div className="flex items-center">
+                    <input
+                      type="text"
+                      name="loginId"
+                      value={userForm.loginId}
+                      onChange={handleUserFormChange}
+                      className={`w-full px-3 py-2 border ${userFormErrors.loginId ? 'border-red-500' : 'border-gray-300'} rounded-md focus:outline-none focus:ring-2 focus:ring-[#2ECC71] focus:border-transparent text-sm`}
+                    />
+                    {!editingUser && (
+                      <button
+                        className="ml-2 min-w-[80px] px-3 py-1.5 bg-[#2ECC71] text-white text-sm font-medium rounded-md hover:bg-[#27ae60] focus:outline-none focus:ring-2 focus:ring-[#2ECC71] focus:ring-offset-2 leading-tight"
+                        onClick={checkIdDuplicate}
+                      >
+                        중복 확인
+                      </button>
+                    )}
+                  </div>
                   {userFormErrors.loginId && (
                     <p className="mt-1 text-xs text-red-500">{userFormErrors.loginId}</p>
                   )}
                 </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    비밀번호 {!editingUser && <span className="text-red-500">*</span>}
-                  </label>
-                  <input
-                    type="password"
-                    name="password"
-                    value={userForm.password}
-                    onChange={handleUserFormChange}
-                    className={`w-full px-3 py-2 border ${userFormErrors.password ? 'border-red-500' : 'border-gray-300'} rounded-md focus:outline-none focus:ring-2 focus:ring-[#2ECC71] focus:border-transparent text-sm`}
-                    placeholder={editingUser ? "변경하려면 입력하세요" : ""}
-                  />
-                  {userFormErrors.password && (
-                    <p className="mt-1 text-xs text-red-500">{userFormErrors.password}</p>
-                  )}
-                </div>
+                {!editingUser && (
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      비밀번호 <span className="text-red-500">*</span>
+                    </label>
+                    <input
+                      type="password"
+                      name="password"
+                      value={userForm.password}
+                      onChange={handleUserFormChange}
+                      className={`w-full px-3 py-2 border ${userFormErrors.password ? 'border-red-500' : 'border-gray-300'} rounded-md focus:outline-none focus:ring-2 focus:ring-[#2ECC71] focus:border-transparent text-sm`}
+                    />
+                    {userFormErrors.password && (
+                      <p className="mt-1 text-xs text-red-500">{userFormErrors.password}</p>
+                    )}
+                  </div>
+                )}
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
                     전화번호 <span className="text-red-500">*</span>
                   </label>
-                  <input
-                    type="text"
-                    name="phoneNumber"
-                    value={userForm.phoneNumber}
-                    onChange={handleUserFormChange}
-                    className={`w-full px-3 py-2 border ${userFormErrors.phoneNumber ? 'border-red-500' : 'border-gray-300'} rounded-md focus:outline-none focus:ring-2 focus:ring-[#2ECC71] focus:border-transparent text-sm`}
-                  />
+                  <div className="flex items-center">
+                    <input
+                      type="text"
+                      name="phoneNumber"
+                      value={userForm.phoneNumber}
+                      onChange={handleUserFormChange}
+                      className={`w-full px-3 py-2 border ${userFormErrors.phoneNumber ? 'border-red-500' : 'border-gray-300'} rounded-md focus:outline-none focus:ring-2 focus:ring-[#2ECC71] focus:border-transparent text-sm`}
+                    />
+                    {!editingUser && (
+                      <button
+                        className="ml-2 min-w-[80px] px-3 py-1.5 bg-[#2ECC71] text-white text-sm font-medium rounded-md hover:bg-[#27ae60] focus:outline-none focus:ring-2 focus:ring-[#2ECC71] focus:ring-offset-2 leading-tight"
+                        onClick={checkPhoneDuplicate}
+                      >
+                        중복 확인
+                      </button>
+                    )}
+                  </div>
                   {userFormErrors.phoneNumber && (
                     <p className="mt-1 text-xs text-red-500">{userFormErrors.phoneNumber}</p>
                   )}
@@ -626,7 +757,8 @@ const UserManagementPage: React.FC = () => {
                 취소
               </button>
               <button
-                className="px-4 py-2 bg-[#2ECC71] text-white rounded-md text-sm font-medium hover:bg-[#27ae60] cursor-pointer !rounded-button whitespace-nowrap"
+                className={`px-4 py-2 rounded-md text-sm font-medium !rounded-button whitespace-nowrap ${isSaveEnabled ? 'bg-[#2ECC71] text-white hover:bg-[#27ae60] cursor-pointer' : 'bg-gray-300 text-white cursor-not-allowed'}`}
+                disabled={!isSaveEnabled}
                 onClick={saveUser}
               >
                 저장
