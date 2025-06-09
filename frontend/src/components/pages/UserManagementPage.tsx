@@ -3,6 +3,7 @@ import { Member, MemberRegisterRequest, MemberUpdateRequest, getMembers, getMemb
 import { Department, DepartmentRegisterRequest, DepartmentUpdateRequest, getDepartments, registerDepartment, updateDepartment, deleteDepartment } from '../../services/departmentService';
 import { handleApiError } from '../../utils/errorHandler';
 import { useCompany } from '../../contexts/CompanyContext';
+import axiosInstance from '../../utils/axios';
 
 const UserManagementPage: React.FC = () => {
   const { companyCode: contextCompanyCode } = useCompany();
@@ -228,17 +229,8 @@ const UserManagementPage: React.FC = () => {
       return;
     }
     try {
-      const accessToken = localStorage.getItem('accessToken');
-      const refreshToken = localStorage.getItem('refreshToken');
-      const res = await fetch(`http://api.rento.world/api/members/check-id/${userForm.loginId}`, {
-        headers: {
-          'accesstoken': accessToken ?? '',
-          'refreshtoken': refreshToken ?? '',
-          'Content-Type': 'application/json'
-        },
-        credentials: 'include'
-      });
-      const data = await res.json();
+      const response = await axiosInstance.get(`/api/members/check-id/${userForm.loginId}`);
+      const data = response.data;
       if (data.data) {
         setIsIdChecked(true);
         alert('사용 가능한 아이디입니다.');
@@ -257,17 +249,8 @@ const UserManagementPage: React.FC = () => {
       return;
     }
     try {
-      const accessToken = localStorage.getItem('accessToken');
-      const refreshToken = localStorage.getItem('refreshToken');
-      const res = await fetch(`http://api.rento.world/api/members/check-email/${userForm.email}`, {
-        headers: {
-          'accesstoken': accessToken ?? '',
-          'refreshtoken': refreshToken ?? '',
-          'Content-Type': 'application/json'
-        },
-        credentials: 'include'
-      });
-      const data = await res.json();
+      const response = await axiosInstance.get(`/api/members/check-email/${userForm.email}`);
+      const data = response.data;
       if (data.data) {
         setIsEmailChecked(true);
         alert('사용 가능한 이메일입니다.');
@@ -286,17 +269,8 @@ const UserManagementPage: React.FC = () => {
       return;
     }
     try {
-      const accessToken = localStorage.getItem('accessToken');
-      const refreshToken = localStorage.getItem('refreshToken');
-      const res = await fetch(`http://api.rento.world/api/members/check-phone/${userForm.phoneNumber}`, {
-        headers: {
-          'accesstoken': accessToken ?? '',
-          'refreshtoken': refreshToken ?? '',
-          'Content-Type': 'application/json'
-        },
-        credentials: 'include'
-      });
-      const data = await res.json();
+      const response = await axiosInstance.get(`/api/members/check-phone/${userForm.phoneNumber}`);
+      const data = response.data;
       if (data.data) {
         setIsPhoneChecked(true);
         alert('사용 가능한 전화번호입니다.');

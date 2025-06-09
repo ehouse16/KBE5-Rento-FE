@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import axiosInstance from '../../utils/axios';
 
 interface Props {
   onSuccess?: () => void;
@@ -27,6 +28,7 @@ const ManagerRegisterForm: React.FC<Props> = ({ onSuccess }) => {
   const [emailChecked, setEmailChecked] = useState(false);
   const [idCheckLoading, setIdCheckLoading] = useState(false);
   const [emailCheckLoading, setEmailCheckLoading] = useState(false);
+  const API_BASE_URL = process.env.REACT_APP_API_BASE_URL;
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
@@ -71,8 +73,8 @@ const ManagerRegisterForm: React.FC<Props> = ({ onSuccess }) => {
     if (!formData.loginId || errors.loginId) return;
     setIdCheckLoading(true);
     try {
-      const res = await fetch(`http://api.rento.world/api/managers/check-loginId/${formData.loginId}`);
-      const result = await res.json();
+      const response = await axiosInstance.get(`/api/managers/check-loginId/${formData.loginId}`);
+      const result = response.data;
       if (result.resultCode === 'SUCCESS' && result.data === true) {
         setIdChecked(true);
       } else {
@@ -88,8 +90,8 @@ const ManagerRegisterForm: React.FC<Props> = ({ onSuccess }) => {
     if (!formData.email || errors.email) return;
     setEmailCheckLoading(true);
     try {
-      const res = await fetch(`http://api.rento.world/api/managers/${formData.email}`);
-      const result = await res.json();
+      const response = await axiosInstance.get(`/api/managers/check-email/${formData.email}`);
+      const result = response.data;
       if (result.resultCode === 'SUCCESS' && result.data === true) {
         setEmailChecked(true);
       } else {
@@ -107,12 +109,8 @@ const ManagerRegisterForm: React.FC<Props> = ({ onSuccess }) => {
     const hasErrors = Object.values(errors).some(error => error !== '');
     if (!hasErrors && idChecked && emailChecked) {
       try {
-        const res = await fetch('http://api.rento.world/api/managers/sign-up', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(formData),
-        });
-        const result = await res.json();
+        const response = await axiosInstance.post('/api/managers/sign-up', formData);
+        const result = response.data;
         if (result.resultCode === 'SUCCESS') {
           alert('매니저가 등록되었습니다');
           if (onSuccess) onSuccess();

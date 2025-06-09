@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useCompany } from '../../contexts/CompanyContext';
+import axiosInstance from '../../utils/axios';
 
 interface LoginResponse {
   loginId: string;
@@ -35,51 +36,31 @@ const ManagerLoginPage: React.FC = () => {
     setLoading(true);
 
     try {
-      const response = await fetch('http://api.rento.world/api/managers/login', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ loginId: formData.loginId, password: formData.password }),
-        credentials: 'include'
+      const response = await axiosInstance.post('/api/managers/login', {
+        loginId: formData.loginId,
+        password: formData.password
       });
 
-      if (!response.ok) {
-        throw new Error('로그인에 실패했습니다.');
-      }
-
-      const data = await response.json();
-      console.log('Login response:', data);
-
-      // 토큰 추출 (서버 응답 형식에 맞춤)
-      const accessToken = response.headers.get('AccessToken');
-      const refreshToken = response.headers.get('RefreshToken');
-
-      console.log('Response headers:', Object.fromEntries(response.headers.entries()));
-      console.log('Tokens from response:', { accessToken, refreshToken });
+      const accessToken = response.headers['AccessToken'];
+      const refreshToken = response.headers['RefreshToken'];
 
       if (!accessToken || !refreshToken) {
         throw new Error('인증 토큰을 받지 못했습니다.');
       }
 
-      // 토큰 저장
       localStorage.setItem('accessToken', accessToken);
       localStorage.setItem('refreshToken', refreshToken);
-      localStorage.setItem('loginId', data.loginId);
-      localStorage.setItem('companyCode', data.companyCode);
+      localStorage.setItem('loginId', response.data.loginId);
+      localStorage.setItem('companyCode', response.data.companyCode);
 
-      console.log('Stored data:', {
-        accessToken: localStorage.getItem('accessToken'),
-        refreshToken: localStorage.getItem('refreshToken'),
-        loginId: localStorage.getItem('loginId'),
-        companyCode: localStorage.getItem('companyCode')
-      });
+      if (setCompanyCode) {
+        setCompanyCode(response.data.companyCode);
+      }
 
-      setCompanyCode(data.companyCode);
-      navigate('/dashboard');
+      navigate('/');
     } catch (error) {
+      setError('로그인에 실패했습니다.');
       console.error('Login error:', error);
-      setError(error instanceof Error ? error.message : '로그인 중 오류가 발생했습니다.');
     } finally {
       setLoading(false);
     }

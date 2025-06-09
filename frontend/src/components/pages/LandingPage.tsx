@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useCompany } from "../../contexts/CompanyContext";
+import axiosInstance from "../../utils/axios";
 
 const LandingPage = () => {
   const navigate = useNavigate();
@@ -31,25 +32,10 @@ const LandingPage = () => {
         return;
       }
 
-      const response = await fetch("http://api.rento.world/api/managers/logout", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "Authorization": `Bearer ${accessToken}`,
-          "X-Refresh-Token": refreshToken
-        },
-        credentials: 'include'
-      });
+      await axiosInstance.post("/api/managers/logout");
 
-      if (response.ok) {
-        console.log("Logout successful");
-        localStorage.clear();
-        navigate("/manager-login");
-      } else {
-        console.error("Logout failed:", response.status);
-        localStorage.clear();
-        navigate("/manager-login");
-      }
+      localStorage.clear();
+      navigate("/manager-login");
     } catch (error) {
       console.error("Logout error:", error);
       localStorage.clear();

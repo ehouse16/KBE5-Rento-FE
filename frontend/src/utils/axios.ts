@@ -1,7 +1,9 @@
 import axios from 'axios';
 
+const API_URL = 'https://api.rento.world';
+
 const axiosInstance = axios.create({
-  baseURL: 'http://api.rento.world',
+  baseURL: API_URL,
   headers: {
     'Content-Type': 'application/json',
   },
@@ -22,11 +24,6 @@ axiosInstance.interceptors.request.use(
     if (refreshToken) {
       config.headers['RefreshToken'] = refreshToken;
     }
-
-    // CORS 관련 헤더 추가
-    config.headers['Access-Control-Allow-Origin'] = '*';
-    config.headers['Access-Control-Allow-Methods'] = '*';
-    config.headers['Access-Control-Allow-Headers'] = '*';
 
     return config;
   },
@@ -51,13 +48,14 @@ axiosInstance.interceptors.response.use(
           throw new Error('No refresh token available');
         }
 
-        // 토큰 갱신 요청
-        const response = await axios.post('http://api.rento.world/api/auth/refresh', null, {
-          headers: {
-            'RefreshToken': refreshToken
-          },
-          withCredentials: true
-        });
+        const response = await axios.post(
+          `${API_URL}/api/auth/refresh`,
+          null,
+          {
+            headers: { 'RefreshToken': refreshToken },
+            withCredentials: true
+          }
+        );
 
         const newAccessToken = response.headers['AccessToken'];
         const newRefreshToken = response.headers['RefreshToken'];
@@ -66,7 +64,6 @@ axiosInstance.interceptors.response.use(
           localStorage.setItem('accessToken', newAccessToken);
           localStorage.setItem('refreshToken', newRefreshToken);
 
-          // 원래 요청 재시도
           originalRequest.headers['AccessToken'] = newAccessToken;
           originalRequest.headers['RefreshToken'] = newRefreshToken;
           return axiosInstance(originalRequest);
@@ -83,4 +80,4 @@ axiosInstance.interceptors.response.use(
   }
 );
 
-export default axiosInstance; 
+export default axiosInstance;

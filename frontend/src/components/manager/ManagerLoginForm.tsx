@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom'; 
+import { useNavigate } from 'react-router-dom';
+import axiosInstance from '../../utils/axios';
 
 const ManagerLoginForm: React.FC = () => {
   const [companyCode, setCompanyCode] = useState('');
@@ -14,52 +15,27 @@ const ManagerLoginForm: React.FC = () => {
     setLoading(true);
     setError('');
     try {
-      const res = await fetch('http://api.rento.world/api/managers/login', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ 
-          companyCode,
-          loginId, 
-          password 
-        }),
+      const response = await axiosInstance.post('/api/managers/login', {
+        companyCode,
+        loginId,
+        password
       });
-      
-      if (res.ok) {
-        const data = await res.json();
-        console.log('Login response data:', data);
 
-        // 토큰 추출 (대소문자 구분 없이)
-        const accessToken = res.headers.get('accesstoken') || 
-                          res.headers.get('AccessToken') || 
-                          res.headers.get('ACCESSTOKEN');
-        const refreshToken = res.headers.get('refreshtoken') || 
-                           res.headers.get('RefreshToken') || 
-                           res.headers.get('REFRESHTOKEN');
+      const accessToken = response.headers['AccessToken'];
+      const refreshToken = response.headers['RefreshToken'];
 
-        console.log('Access Token:', accessToken);
-        console.log('Refresh Token:', refreshToken);
-
-        if (!accessToken || !refreshToken) {
-          throw new Error('토큰이 서버 응답에 포함되지 않았습니다.');
-        }
-
-        // 토큰 저장
+      if (accessToken && refreshToken) {
         localStorage.setItem('accessToken', accessToken);
         localStorage.setItem('refreshToken', refreshToken);
-        
-        // 사용자 정보 저장
-        localStorage.setItem('loginId', data.loginId);
-        localStorage.setItem('companyCode', data.companyCode);
-        localStorage.setItem('managerName', data.name);
-
-        navigate('/dashboard');
+        localStorage.setItem('loginId', response.data.loginId);
+        localStorage.setItem('companyCode', response.data.companyCode);
+        navigate('/');
       } else {
-        const errorData = await res.json().catch(() => ({}));
-        setError(errorData.message || '로그인에 실패했습니다.');
+        throw new Error('인증 토큰을 받지 못했습니다.');
       }
     } catch (error) {
+      setError('로그인에 실패했습니다.');
       console.error('Login error:', error);
-      setError(error instanceof Error ? error.message : '로그인 중 오류가 발생했습니다.');
     } finally {
       setLoading(false);
     }

@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import axiosInstance from '../../utils/axios';
 
 const DashboardPage = () => {
   const [stats, setStats] = useState({
@@ -18,23 +19,19 @@ const DashboardPage = () => {
         setLoading(true);
         setError(null);
 
-        // 예시 API 주소, 실제 주소로 교체하세요
-        const statsResponse = await fetch('http://api.rento.world/api/dashboard/stats');
-        if (!statsResponse.ok) throw new Error('통계 데이터 불러오기 실패');
-        const statsData = await statsResponse.json();
-
-        const activitiesResponse = await fetch('http://api.rento.world/api/dashboard/recent-activities');
-        if (!activitiesResponse.ok) throw new Error('최근 활동 데이터 불러오기 실패');
-        const activitiesData = await activitiesResponse.json();
+        const [statsResponse, activitiesResponse] = await Promise.all([
+          axiosInstance.get('/api/dashboard/stats'),
+          axiosInstance.get('/api/dashboard/recent-activities')
+        ]);
 
         setStats({
-          totalVehicles: statsData.totalVehicles,
-          activeReservations: statsData.activeReservations,
-          totalDrivers: statsData.totalDrivers,
-          monthlyDistance: statsData.monthlyDistance,
+          totalVehicles: statsResponse.data.totalVehicles,
+          activeReservations: statsResponse.data.activeReservations,
+          totalDrivers: statsResponse.data.totalDrivers,
+          monthlyDistance: statsResponse.data.monthlyDistance,
         });
 
-        setRecentActivities(activitiesData);
+        setRecentActivities(activitiesResponse.data);
 
       } catch (err) {
         setError(err.message);

@@ -16,6 +16,7 @@ const Header = () => {
   const handleLogout = async () => {
     const accessToken = localStorage.getItem("AccessToken") || localStorage.getItem("accessToken");
     const refreshToken = localStorage.getItem("RefreshToken") || localStorage.getItem("refreshToken");
+    const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
 
     if (!accessToken) {
       alert("인증 토큰이 없습니다. 다시 로그인해 주세요.");
@@ -25,7 +26,7 @@ const Header = () => {
     }
 
     try {
-      const response = await fetch("http://api.rento.world/api/managers/logout", {
+      const response = await fetch(`${API_BASE_URL}/api/managers/logout`, {
         method: "POST",
         headers: {
           AccessToken: accessToken,
