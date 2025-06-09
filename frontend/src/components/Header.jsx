@@ -25,7 +25,7 @@ const Header = () => {
     }
 
     try {
-      const response = await fetch("/api/managers/logout", {
+      const response = await fetch("http://api.rento.world/api/managers/logout", {
         method: "POST",
         headers: {
           AccessToken: accessToken,

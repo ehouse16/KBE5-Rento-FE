@@ -35,7 +35,7 @@ const ManagerLoginPage: React.FC = () => {
     setLoading(true);
 
     try {
-      const response = await fetch('/api/managers/login', {
+      const response = await fetch('http://api.rento.world/api/managers/login', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

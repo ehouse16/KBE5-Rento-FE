@@ -230,7 +230,7 @@ const UserManagementPage: React.FC = () => {
     try {
       const accessToken = localStorage.getItem('accessToken');
       const refreshToken = localStorage.getItem('refreshToken');
-      const res = await fetch(`/api/members/check-id/${userForm.loginId}`, {
+      const res = await fetch(`http://api.rento.world/api/members/check-id/${userForm.loginId}`, {
         headers: {
           'accesstoken': accessToken ?? '',
           'refreshtoken': refreshToken ?? '',
@@ -259,7 +259,7 @@ const UserManagementPage: React.FC = () => {
     try {
       const accessToken = localStorage.getItem('accessToken');
       const refreshToken = localStorage.getItem('refreshToken');
-      const res = await fetch(`/api/members/check-email/${userForm.email}`, {
+      const res = await fetch(`http://api.rento.world/api/members/check-email/${userForm.email}`, {
         headers: {
           'accesstoken': accessToken ?? '',
           'refreshtoken': refreshToken ?? '',
@@ -288,7 +288,7 @@ const UserManagementPage: React.FC = () => {
     try {
       const accessToken = localStorage.getItem('accessToken');
       const refreshToken = localStorage.getItem('refreshToken');
-      const res = await fetch(`/api/members/check-phone/${userForm.phoneNumber}`, {
+      const res = await fetch(`http://api.rento.world/api/members/check-phone/${userForm.phoneNumber}`, {
         headers: {
           'accesstoken': accessToken ?? '',
           'refreshtoken': refreshToken ?? '',

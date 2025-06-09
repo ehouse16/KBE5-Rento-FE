@@ -71,7 +71,7 @@ const ManagerRegisterForm: React.FC<Props> = ({ onSuccess }) => {
     if (!formData.loginId || errors.loginId) return;
     setIdCheckLoading(true);
     try {
-      const res = await fetch(`/api/managers/check-loginId/${formData.loginId}`);
+      const res = await fetch(`http://api.rento.world/api/managers/check-loginId/${formData.loginId}`);
       const result = await res.json();
       if (result.resultCode === 'SUCCESS' && result.data === true) {
         setIdChecked(true);
@@ -88,7 +88,7 @@ const ManagerRegisterForm: React.FC<Props> = ({ onSuccess }) => {
     if (!formData.email || errors.email) return;
     setEmailCheckLoading(true);
     try {
-      const res = await fetch(`/api/managers/${formData.email}`);
+      const res = await fetch(`http://api.rento.world/api/managers/${formData.email}`);
       const result = await res.json();
       if (result.resultCode === 'SUCCESS' && result.data === true) {
         setEmailChecked(true);
@@ -107,7 +107,7 @@ const ManagerRegisterForm: React.FC<Props> = ({ onSuccess }) => {
     const hasErrors = Object.values(errors).some(error => error !== '');
     if (!hasErrors && idChecked && emailChecked) {
       try {
-        const res = await fetch('/api/managers/sign-up', {
+        const res = await fetch('http://api.rento.world/api/managers/sign-up', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(formData),

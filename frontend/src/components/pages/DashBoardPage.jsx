@@ -19,11 +19,11 @@ const DashboardPage = () => {
         setError(null);
 
         // 예시 API 주소, 실제 주소로 교체하세요
-        const statsResponse = await fetch('/api/dashboard/stats');
+        const statsResponse = await fetch('http://api.rento.world/api/dashboard/stats');
         if (!statsResponse.ok) throw new Error('통계 데이터 불러오기 실패');
         const statsData = await statsResponse.json();
 
-        const activitiesResponse = await fetch('/api/dashboard/recent-activities');
+        const activitiesResponse = await fetch('http://api.rento.world/api/dashboard/recent-activities');
         if (!activitiesResponse.ok) throw new Error('최근 활동 데이터 불러오기 실패');
         const activitiesData = await activitiesResponse.json();
 

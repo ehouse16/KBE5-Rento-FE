@@ -31,7 +31,7 @@ const LandingPage = () => {
         return;
       }
 
-      const response = await fetch("/api/managers/logout", {
+      const response = await fetch("http://api.rento.world/api/managers/logout", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

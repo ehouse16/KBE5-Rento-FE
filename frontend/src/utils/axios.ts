@@ -52,7 +52,7 @@ axiosInstance.interceptors.response.use(
         }
 
         // 토큰 갱신 요청
-        const response = await axios.post('/api/auth/refresh', null, {
+        const response = await axios.post('http://api.rento.world/api/auth/refresh', null, {
           headers: {
             'RefreshToken': refreshToken
           },

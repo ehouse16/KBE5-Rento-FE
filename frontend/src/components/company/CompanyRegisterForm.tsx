@@ -23,7 +23,7 @@ const CompanyRegisterForm: React.FC<Props> = ({ onSuccess }) => {
         return;
       }
       // POST 방식으로 body에 담아 전송
-      const res = await fetch('/api/companies/check-bizNumber', {
+      const res = await fetch('http://api.rento.world/api/companies/check-bizNumber', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ biznumber: value }),
@@ -78,8 +78,8 @@ const CompanyRegisterForm: React.FC<Props> = ({ onSuccess }) => {
         setBizNumberError('사업자 등록번호는 숫자만 입력하세요');
         return;
       }
-      const res = await fetch('/api/companies/register', {
-        method: 'POST',
+      const res = await fetch('http://api.rento.world/api/companies/register', {     
+        method: 'POST', 
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ bizNumber: num, name }),
       });
