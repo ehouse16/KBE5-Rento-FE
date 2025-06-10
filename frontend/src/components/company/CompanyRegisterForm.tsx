@@ -87,6 +87,7 @@ const CompanyRegisterForm: React.FC<Props> = ({ onSuccess }) => {
         if (result.resultCode === 'SUCCESS') {
           setCompanyCode(result.data.code);
           setModalOpen(true);
+          console.log('모달 오픈! code:', result.data.code);
         } else {
           alert(result.message || '등록 실패');
         }
@@ -105,7 +106,10 @@ const CompanyRegisterForm: React.FC<Props> = ({ onSuccess }) => {
     setCompanyCode(null);
     setBizNumber('');
     setName('');
-    if (onSuccess) onSuccess();
+    if (onSuccess) {
+      console.log('onSuccess 호출!');
+      onSuccess();
+    }
   };
 
   return (

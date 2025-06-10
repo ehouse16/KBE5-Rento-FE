@@ -29,7 +29,7 @@ const ManagerLoginForm: React.FC = () => {
         localStorage.setItem('refreshToken', refreshToken);
         localStorage.setItem('loginId', response.data.loginId);
         localStorage.setItem('companyCode', response.data.companyCode);
-        navigate('/');
+        navigate('/dashboard');
       } else {
         throw new Error('인증 토큰을 받지 못했습니다.');
       }
