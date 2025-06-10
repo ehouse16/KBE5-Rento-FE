@@ -21,8 +21,8 @@ const ManagerLoginForm: React.FC = () => {
         password
       });
 
-      const accessToken = response.headers['AccessToken'];
-      const refreshToken = response.headers['RefreshToken'];
+      const accessToken = response.headers['accesstoken'] || response.headers['AccessToken'];
+      const refreshToken = response.headers['refreshtoken'] || response.headers['RefreshToken'];
 
       if (accessToken && refreshToken) {
         localStorage.setItem('accessToken', accessToken);

@@ -41,8 +41,8 @@ const ManagerLoginPage: React.FC = () => {
         password: formData.password
       });
 
-      const accessToken = response.headers['AccessToken'];
-      const refreshToken = response.headers['RefreshToken'];
+      const accessToken = response.headers['accesstoken'] || response.headers['AccessToken'];
+      const refreshToken = response.headers['refreshtoken'] || response.headers['RefreshToken'];
 
       if (!accessToken || !refreshToken) {
         throw new Error('인증 토큰을 받지 못했습니다.');
