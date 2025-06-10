@@ -27,7 +27,7 @@ const ManagerRegisterPage: React.FC = () => {
             <h2 className="text-3xl font-bold text-gray-900 mb-2">매니저 회원가입</h2>
             <p className="text-gray-600">FleetPro 서비스 이용을 위한 매니저 회원가입</p>
           </div>
-          <ManagerRegisterForm onSuccess={() => navigate('/dashboard')} />
+          <ManagerRegisterForm onSuccess={() => navigate('/')} />
         </div>
       </main>
 

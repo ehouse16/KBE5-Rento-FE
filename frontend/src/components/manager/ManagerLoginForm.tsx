@@ -29,9 +29,9 @@ const ManagerLoginForm: React.FC = () => {
         localStorage.setItem('refreshToken', refreshToken);
         localStorage.setItem('loginId', response.data.loginId);
         localStorage.setItem('companyCode', response.data.companyCode);
-
-        console.log('로그인 성공! 대시보드로 이동');
-        navigate('/dashboard');
+        setTimeout(() => {
+          navigate('/dashboard');
+        }, 100);
       } else {
         throw new Error('인증 토큰을 받지 못했습니다.');
       }
