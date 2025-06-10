@@ -57,7 +57,7 @@ const ManagerLoginPage: React.FC = () => {
         setCompanyCode(response.data.companyCode);
       }
 
-      navigate('/');
+      navigate('/dashboard');
     } catch (error) {
       setError('로그인에 실패했습니다.');
       console.error('Login error:', error);
