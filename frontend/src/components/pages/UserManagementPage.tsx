@@ -180,6 +180,7 @@ const UserManagementPage: React.FC = () => {
         break;
       case 'phoneNumber':
         if (!value) error = '전화번호는 필수 값입니다.';
+        else if (!/^\d{3}-\d{4}-\d{4}$/.test(value)) error = '전화번호는 000-0000-0000 형식으로 입력하세요.';
         break;
       case 'departmentId':
         if (!value) error = '부서는 필수 값입니다.';
