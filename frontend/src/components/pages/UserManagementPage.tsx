@@ -180,7 +180,7 @@ const UserManagementPage: React.FC = () => {
         break;
       case 'phoneNumber':
         if (!value) error = '전화번호는 필수 값입니다.';
-        else if (!/^\d{3}-\d{4}-\d{4}$/.test(value)) error = '전화번호는 000-0000-0000 형식으로 입력하세요.';
+        else if (!/^\d{3}-\d{4}-\d{4}$/.test(value)) error = '전화번호는 010-1234-5678 형식으로 입력하세요.';
         break;
       case 'departmentId':
         if (!value) error = '부서는 필수 값입니다.';
@@ -687,6 +687,7 @@ const UserManagementPage: React.FC = () => {
                       type="text"
                       name="phoneNumber"
                       value={userForm.phoneNumber}
+                      placeholder="010-1234-5678"
                       onChange={handleUserFormChange}
                       className={`w-full px-3 py-2 border ${userFormErrors.phoneNumber ? 'border-red-500' : 'border-gray-300'} rounded-md focus:outline-none focus:ring-2 focus:ring-[#2ECC71] focus:border-transparent text-sm`}
                     />
