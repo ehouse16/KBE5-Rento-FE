@@ -142,8 +142,20 @@ const UserManagementPage: React.FC = () => {
   // 사용자 폼 변경 핸들러
   const handleUserFormChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
-    setUserForm(prev => ({ ...prev, [name]: value }));
-    validateUserField(name, value);
+    let newValue = value;
+    if (name === 'phoneNumber') {
+      // 숫자만 남기고, 11자리까지만 허용
+      const onlyNums = newValue.replace(/[^\d]/g, '').slice(0, 11);
+      if (onlyNums.length < 4) {
+        newValue = onlyNums;
+      } else if (onlyNums.length < 8) {
+        newValue = onlyNums.slice(0, 3) + '-' + onlyNums.slice(3);
+      } else {
+        newValue = onlyNums.slice(0, 3) + '-' + onlyNums.slice(3, 7) + '-' + onlyNums.slice(7);
+      }
+    }
+    setUserForm(prev => ({ ...prev, [name]: newValue }));
+    validateUserField(name, newValue);
     if (name === 'loginId') setIsIdChecked(false);
     if (name === 'email') setIsEmailChecked(false);
     if (name === 'phoneNumber') setIsPhoneChecked(false);
