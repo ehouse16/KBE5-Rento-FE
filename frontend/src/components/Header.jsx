@@ -16,7 +16,7 @@ const Header = () => {
   const handleLogout = async () => {
     const accessToken = localStorage.getItem("AccessToken") || localStorage.getItem("accessToken");
     const refreshToken = localStorage.getItem("RefreshToken") || localStorage.getItem("refreshToken");
-    const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
+    const API_BASE_URL = "https://api.rento.world/";
 
     if (!accessToken) {
       alert("인증 토큰이 없습니다. 다시 로그인해 주세요.");
