@@ -36,7 +36,7 @@ const DriveListPage: React.FC = () => {
         console.log("운행 목록 API 응답:", res.data);
         const data = res.data;
         setDrives(
-          (data.data?.content || []).map((d: any) => ({
+          (Array.isArray(data.data) ? data.data : []).map((d: any) => ({
             id: d.id,
             memberName: d.member?.name || "알 수 없음",
             vehicleNumber: d.vehicle?.vehicleNumber || "알 수 없음",
@@ -84,7 +84,7 @@ const DriveListPage: React.FC = () => {
         console.log("운행 목록 API 응답(등록 후):", res.data);
         const data = res.data;
         setDrives(
-          (data.data?.content || []).map((d: any) => ({
+          (Array.isArray(data.data) ? data.data : []).map((d: any) => ({
             id: d.id,
             memberName: d.member?.name || "알 수 없음",
             vehicleNumber: d.vehicle?.vehicleNumber || "알 수 없음",
