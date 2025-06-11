@@ -38,8 +38,8 @@ const DriveListPage: React.FC = () => {
         setDrives(
           (Array.isArray(data.data) ? data.data : []).map((d: any) => ({
             id: d.id,
-            memberName: d.member?.name || "알 수 없음",
-            vehicleNumber: d.vehicle?.vehicleNumber || "알 수 없음",
+            memberName: d.memberName || "알 수 없음",
+            vehicleNumber: d.vehicleNumber || "알 수 없음",
             startDate: d.startDate ? d.startDate.replace("T", " ").slice(0, 16) : "",
             endDate: d.endDate ? d.endDate.replace("T", " ").slice(0, 16) : "",
             startLocation: d.startLocation || "알 수 없음",
@@ -86,8 +86,8 @@ const DriveListPage: React.FC = () => {
         setDrives(
           (Array.isArray(data.data) ? data.data : []).map((d: any) => ({
             id: d.id,
-            memberName: d.member?.name || "알 수 없음",
-            vehicleNumber: d.vehicle?.vehicleNumber || "알 수 없음",
+            memberName: d.memberName || "알 수 없음",
+            vehicleNumber: d.vehicleNumber || "알 수 없음",
             startDate: d.startDate ? d.startDate.replace("T", " ").slice(0, 16) : "",
             endDate: d.endDate ? d.endDate.replace("T", " ").slice(0, 16) : "",
             startLocation: d.startLocation || "알 수 없음",
