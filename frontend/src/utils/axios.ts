@@ -1,7 +1,9 @@
 import axios from 'axios';
 
+const API_URL = 'https://api.rento.world';
+
 const axiosInstance = axios.create({
-  baseURL: '', // 상대경로만 사용
+  baseURL: API_URL,
   headers: {
     'Content-Type': 'application/json',
   },
@@ -47,7 +49,7 @@ axiosInstance.interceptors.response.use(
         }
 
         const response = await axios.post(
-          '/api/auth/refresh', // baseURL 없이 상대경로로 요청
+          `${API_URL}/api/auth/refresh`,
           null,
           {
             headers: { 'RefreshToken': refreshToken },
