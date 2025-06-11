@@ -27,6 +27,8 @@ const VehicleFleetPage: React.FC = () => {
   const [activeTab, setActiveTab] = useState('vehicles');
   const [totalElements, setTotalElements] = useState(0);
   const [addModalOpen, setAddModalOpen] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
 
   // 부서 목록 불러오기
   useEffect(() => {
@@ -60,6 +62,26 @@ const VehicleFleetPage: React.FC = () => {
     setVehicles(Array.isArray(data.data?.content) ? data.data.content : []);
     setTotalElements(Number.isNaN(Number(data.data?.totalElements)) ? 0 : Number(data.data?.totalElements));
   };
+
+  useEffect(() => {
+    console.log("DriveListPage mounted");
+    const fetchDrives = async () => {
+      console.log("fetchDrives called");
+      setLoading(true);
+      try {
+        const res = await axiosInstance.get("/api/drives");
+        console.log("API 응답:", res);
+        const data = res.data;
+        setTotalElements(Number.isNaN(Number(data.data?.totalElements)) ? 0 : Number(data.data?.totalElements));
+      } catch (e) {
+        setError('운행 목록을 불러오지 못했습니다.');
+        console.error("운행 목록 에러:", e);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchDrives();
+  }, []);
 
   useEffect(() => {
     fetchVehicles();
