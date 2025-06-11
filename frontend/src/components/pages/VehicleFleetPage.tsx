@@ -31,7 +31,9 @@ const VehicleFleetPage: React.FC = () => {
   useEffect(() => {
     const fetchDepartments = async () => {
       const accessToken = localStorage.getItem('accessToken');
-      const res = await fetch('/api/departments?companyCode=C1', { 
+      const companyCode = localStorage.getItem('companyCode');
+      if (!companyCode) return;
+      const res = await fetch(`/api/departments?companyCode=${companyCode}`, { 
         credentials: 'include',
         headers: {
           'AccessToken': accessToken || ''
