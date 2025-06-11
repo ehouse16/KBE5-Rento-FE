@@ -74,6 +74,8 @@ const DriveListPage: React.FC = () => {
       return 0;
     });
 
+  console.log("filteredDrives:", filteredDrives);
+
   const handleRegisterSuccess = () => {
     setRegisterOpen(false);
     const fetchDrives = async () => {
@@ -120,6 +122,8 @@ const DriveListPage: React.FC = () => {
     const minutes = String(date.getMinutes()).padStart(2, "0");
     return `${hours}:${minutes}`;
   };
+
+  console.log("DriveList drives props:", drives);
 
   return (
     <div className="min-h-screen bg-white flex flex-col">
