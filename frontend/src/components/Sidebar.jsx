@@ -22,7 +22,7 @@ const Sidebar = ({ activeTab, setActiveTab }) => {
       id: "reservations",
       label: "예약 관리",
       icon: "fas fa-calendar-alt", 
-      path: "/reservations"
+      path: "/drives"
     },
     {
       id: "reports",

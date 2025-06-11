@@ -14,6 +14,7 @@ const ManagerLoginForm: React.FC = () => {
     e.preventDefault();
     setLoading(true);
     setError('');
+    
     try {
       const response = await axiosInstance.post('/api/managers/login', {
         companyCode,
