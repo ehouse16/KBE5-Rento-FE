@@ -23,7 +23,7 @@
     "web-vitals": "^2.1.4"
   },
   "scripts": {
-    "start": "BROWSER=none TSC_COMPILE_ON_ERROR=true craco start",
+    "start": "HTTPS=true BROWSER=none TSC_COMPILE_ON_ERROR=true craco start",
     "build": "craco build",
     "test": "craco test",
     "eject": "react-scripts eject"
