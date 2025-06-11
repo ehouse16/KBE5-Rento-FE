@@ -30,9 +30,10 @@ const DriveListPage: React.FC = () => {
 
   useEffect(() => {
     const fetchDrives = async () => {
-      setLoading(true);
+      console.log("운행 목록 useEffect 실행됨");
       try {
         const res = await axiosInstance.get("/api/drives");
+        console.log("운행 목록 API 응답:", res.data);
         const data = res.data;
         setDrives(
           (data.data?.content || []).map((d: any) => ({
@@ -49,8 +50,7 @@ const DriveListPage: React.FC = () => {
         setTotalElements(Number.isNaN(Number(data.data?.totalElements)) ? 0 : Number(data.data?.totalElements));
       } catch (e) {
         setError('운행 목록을 불러오지 못했습니다.');
-      } finally {
-        setLoading(false);
+        console.error("운행 목록 에러:", e);
       }
     };
     fetchDrives();
@@ -79,6 +79,7 @@ const DriveListPage: React.FC = () => {
     const fetchDrives = async () => {
       try {
         const res = await axiosInstance.get("/api/drives");
+        console.log("운행 목록 API 응답(등록 후):", res.data);
         const data = res.data;
         setDrives(
           (data.data?.content || []).map((d: any) => ({
@@ -95,6 +96,7 @@ const DriveListPage: React.FC = () => {
         setTotalElements(Number.isNaN(Number(data.data?.totalElements)) ? 0 : Number(data.data?.totalElements));
       } catch (e) {
         setError('운행 목록을 불러오지 못했습니다.');
+        console.error("운행 목록 에러(등록 후):", e);
       }
     };
     fetchDrives();
