@@ -4,6 +4,7 @@ import Footer from "../Footer";
 import Sidebar from "../Sidebar";
 import DriveList from "../drive/DriveList";
 import DriveRegisterModal from "../drive/DriveRegisterModal";
+import axiosInstance from '../../utils/axios';
 
 // DriveListPage 내부에서 사용할 간소화된 Drive 인터페이스 정의
 interface Drive {
@@ -23,26 +24,23 @@ const DriveListPage: React.FC = () => {
   const [status, setStatus] = useState("전체 상태");
   const [sort, setSort] = useState("날짜순");
   const [registerOpen, setRegisterOpen] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [totalElements, setTotalElements] = useState(0);
 
   useEffect(() => {
     const fetchDrives = async () => {
-      const accessToken = localStorage.getItem("accessToken");
-      const res = await fetch("/api/drives", {
-        headers: { "AccessToken": accessToken || "" }
-      });
-      const data = await res.json();
-      setDrives(
-        (data.data || []).map((d: any) => ({
-          id: d.id,
-          memberName: d.memberName || "알 수 없음",
-          vehicleNumber: d.vehicleNumber || "알 수 없음",
-          startDate: d.startDate ? d.startDate.replace("T", " ").slice(0, 16) : "",
-          endDate: d.endDate ? d.endDate.replace("T", " ").slice(0, 16) : "",
-          startLocation: d.startLocation || "알 수 없음",
-          endLocation: d.endLocation || "알 수 없음",
-          isStart: d.isStart,
-        }))
-      );
+      setLoading(true);
+      try {
+        const res = await axiosInstance.get("/api/drives");
+        const data = res.data;
+        setDrives(data.data?.content || []);
+        setTotalElements(Number.isNaN(Number(data.data?.totalElements)) ? 0 : Number(data.data?.totalElements));
+      } catch (e) {
+        setError('운행 목록을 불러오지 못했습니다.');
+      } finally {
+        setLoading(false);
+      }
     };
     fetchDrives();
   }, []);

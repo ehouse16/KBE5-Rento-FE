@@ -8,6 +8,7 @@ import VehicleTable from '../vehicle/VehicleTable';
 import VehiclePagination from '../vehicle/VehiclePagination';
 import VehicleAddButton from '../vehicle/VehicleAddButton';
 import VehicleAddModal from '../vehicle/VehicleAddModal';
+import axiosInstance from '../../utils/axios';
 
 type SortConfig = {
   key: string;
@@ -33,13 +34,8 @@ const VehicleFleetPage: React.FC = () => {
       const accessToken = localStorage.getItem('accessToken');
       const companyCode = localStorage.getItem('companyCode');
       if (!companyCode) return;
-      const res = await fetch(`/api/departments?companyCode=${companyCode}`, { 
-        credentials: 'include',
-        headers: {
-          'AccessToken': accessToken || ''
-        }
-      });
-      const data = await res.json();
+      const res = await axiosInstance.get(`/api/departments?companyCode=${companyCode}`);
+      const data = res.data;
       setDepartments([
         { id: 'all', name: '모든 부서' },
         ...data.data.map((d: any) => ({
@@ -59,13 +55,8 @@ const VehicleFleetPage: React.FC = () => {
     if (onlyFree) params.append('onlyFree', 'true');
     params.append('page', String(isNaN(currentPage) ? 1 : currentPage - 1));
     params.append('size', String(isNaN(itemsPerPage) ? 5 : itemsPerPage));
-    const res = await fetch(`/api/vehicles?${params.toString()}`, { 
-      credentials: 'include',
-      headers: {
-        'AccessToken': accessToken || ''
-      }
-    });
-    const data = await res.json();
+    const res = await axiosInstance.get(`/api/vehicles?${params.toString()}`);
+    const data = res.data;
     setVehicles(Array.isArray(data.data?.content) ? data.data.content : []);
     setTotalElements(Number.isNaN(Number(data.data?.totalElements)) ? 0 : Number(data.data?.totalElements));
   };

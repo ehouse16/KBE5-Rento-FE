@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import axiosInstance from '../../utils/axios';
 
 interface FormData {
   memberId: string;
@@ -65,14 +66,11 @@ const DriveRegisterModal: React.FC<DriveRegisterModalProps> = ({ open, onClose, 
         onClose();
         return;
       }
-      fetch(`/api/members?companyCode=${companyCode}`, { headers: { AccessToken: localStorage.getItem("accessToken") || "" } })
-        .then(res => res.json())
-        .then(data => setMembers(data.data || []));
-      fetch("/api/vehicles?onlyFree=true", { headers: { AccessToken: localStorage.getItem("accessToken") || "" } })
-        .then(res => res.json())
-        .then(data => {
-          console.log("Loaded vehicles:", data.data?.content);
-          setVehicles(data.data?.content || []);
+      axiosInstance.get(`/api/members?companyCode=${companyCode}`, { headers: { AccessToken: localStorage.getItem("accessToken") || "" } })
+        .then(res => setMembers(res.data.data || []));
+      axiosInstance.get("/api/vehicles?onlyFree=true", { headers: { AccessToken: localStorage.getItem("accessToken") || "" } })
+        .then(res => {
+          setVehicles(res.data.data?.content || []);
         });
     }
   }, [open, onClose]);
@@ -126,15 +124,7 @@ const DriveRegisterModal: React.FC<DriveRegisterModalProps> = ({ open, onClose, 
         endDateTime: formData.endDateTime,
       };
       console.log("payload", payload);
-      const res = await fetch("/api/drives", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          AccessToken: localStorage.getItem("accessToken") || "",
-        },
-        body: JSON.stringify(payload),
-      });
-      if (!res.ok) throw new Error("등록 실패");
+      const res = await axiosInstance.post("/api/drives", payload, { headers: { AccessToken: localStorage.getItem("accessToken") || "" } });
       onSuccess();
       onClose();
     } catch (err) {

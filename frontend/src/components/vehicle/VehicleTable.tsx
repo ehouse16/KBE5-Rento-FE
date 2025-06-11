@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import VehicleEditModal from './VehicleEditModal';
+import axiosInstance from '../../utils/axios';
 
 interface Vehicle {
   id?: number;
@@ -46,13 +47,8 @@ const VehicleTable: React.FC<VehicleTableProps> = ({ vehicles, sortConfig, setSo
   const handleDelete = async (vehicleId?: number) => {
     if (!vehicleId) return;
     if (!window.confirm('정말 삭제하시겠습니까?')) return;
-    const res = await fetch(`/api/vehicles/${vehicleId}`, {
-      method: 'DELETE',
-      headers: {
-        'AccessToken': localStorage.getItem('accessToken') || '',
-      },
-    });
-    if (res.ok) {
+    const res = await axiosInstance.delete(`/api/vehicles/${vehicleId}`);
+    if (res.status === 200 || res.status === 204) {
       alert('삭제되었습니다.');
       fetchVehicles();
     } else {

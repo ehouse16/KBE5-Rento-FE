@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import axiosInstance from '../../utils/axios';
 
 interface VehicleEditModalProps {
   open: boolean;
@@ -24,18 +25,10 @@ const VehicleEditModal: React.FC<VehicleEditModalProps> = ({ open, onClose, vehi
     if (!vehicle?.id) return;
     setLoading(true);
     try {
-      const res = await fetch(`/api/vehicles/${vehicle.id}`, {
-        method: "PUT",
-        headers: {
-          "Content-Type": "application/json",
-          "AccessToken": localStorage.getItem("accessToken") || "",
-        },
-        body: JSON.stringify({
-          totalDistanceKm: Number(totalDistanceKm),
-          batteryVoltage,
-        }),
+      const res = await axiosInstance.put(`/api/vehicles/${vehicle.id}`, {
+        totalDistanceKm: Number(totalDistanceKm),
+        batteryVoltage,
       });
-      if (!res.ok) throw new Error("수정 실패");
       alert("수정 완료");
       onSuccess();
       onClose();

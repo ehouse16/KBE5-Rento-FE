@@ -5,6 +5,7 @@ import Sidebar from "../Sidebar";
 import Footer from "../Footer";
 import DriveRegisterModal from "../drive/DriveRegisterModal";
 import { VehicleDetail } from "../../types/vehicle";
+import axiosInstance from '../../utils/axios';
 
 const VehicleDetailPage: React.FC = () => {
   const { vehicleId } = useParams<{ vehicleId: string }>();
@@ -25,21 +26,8 @@ const VehicleDetailPage: React.FC = () => {
 
       setLoading(true);
       try {
-        const accessToken = localStorage.getItem("AccessToken") || localStorage.getItem("accessToken");
-        
-        const response = await fetch(`/api/vehicles/${vehicleId}`, {
-          method: "GET",
-          headers: {
-            "Content-Type": "application/json",
-            ...(accessToken && { AccessToken: accessToken }),
-          },
-        });
-
-        if (!response.ok) {
-          throw new Error("차량 정보를 불러오지 못했습니다.");
-        }
-
-        const data = await response.json();
+        const response = await axiosInstance.get(`/api/vehicles/${vehicleId}`);
+        const data = response.data;
         
         // API 응답 구조에 맞게 데이터 파싱
         const vehicleData = data.data || data.result || data;

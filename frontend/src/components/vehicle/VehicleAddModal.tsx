@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import axiosInstance from '../../utils/axios';
 
 interface Props {
   open: boolean;
@@ -178,15 +179,7 @@ const VehicleAddModal: React.FC<Props> = ({ open, onClose, onSuccess, department
           vehicleNumber: formData.vehicleNumber.replace(/\s/g, ""),
         };
         console.log('payload:', payload);
-        const res = await fetch('/api/vehicles', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'AccessToken': accessToken || ''
-          },
-          body: JSON.stringify(payload),
-        });
-        if (!res.ok) throw new Error('등록 실패');
+        const res = await axiosInstance.post('/api/vehicles', payload);
         onSuccess();
         onClose();
         alert('차량이 성공적으로 등록되었습니다.');

@@ -4,32 +4,35 @@ import { DriveDetail } from "../../types/drive";
 import Header from "../Header";
 import Footer from "../Footer";
 import Sidebar from "../Sidebar";
+import axiosInstance from '../../utils/axios';
 
 const DriveDetailPage: React.FC = () => {
   const { driveId } = useParams<{ driveId: string }>();
   const navigate = useNavigate();
   const [driveDetail, setDriveDetail] = useState<DriveDetail | null>(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [endLoading, setEndLoading] = useState(false);
+  const [endSuccess, setEndSuccess] = useState(false);
+  const [endError, setEndError] = useState<string | null>(null);
 
   useEffect(() => {
     const fetchDriveDetail = async () => {
+      if (!driveId) return;
+      setLoading(true);
       try {
-        const response = await fetch(`/api/drives/${driveId}`, {
-          headers: { AccessToken: localStorage.getItem("accessToken") || "" }
-        });
-        if (!response.ok) throw new Error("운행 상세 정보를 불러오는데 실패했습니다.");
-        const data = await response.json();
-        setDriveDetail(data.data);
-      } catch (error) {
-        alert(error instanceof Error ? error.message : "운행 상세 정보를 불러오는데 실패했습니다.");
-        navigate("/drives");
+        const response = await axiosInstance.get(`/api/drives/${driveId}`);
+        const data = await response.data;
+        setDriveDetail(data.data || data.result || data);
+      } catch (e) {
+        setError('운행 정보를 불러오지 못했습니다.');
       } finally {
         setLoading(false);
       }
     };
 
     fetchDriveDetail();
-  }, [driveId, navigate]);
+  }, [driveId]);
 
   const formatDate = (dateString: string | null): string => {
     if (!dateString) return "-";
@@ -38,18 +41,15 @@ const DriveDetailPage: React.FC = () => {
   };
 
   const handleEndDrive = async () => {
-    if (!window.confirm("운행을 종료하시겠습니까?")) return;
-
+    if (!driveId) return;
+    setEndLoading(true);
     try {
-      const response = await fetch(`/api/drives/end/${driveId}`, {
-        method: "PATCH",
-        headers: { AccessToken: localStorage.getItem("accessToken") || "" }
-      });
-      if (!response.ok) throw new Error("운행 종료에 실패했습니다.");
-      alert("운행이 종료되었습니다.");
-      navigate("/drives");
-    } catch (error) {
-      alert(error instanceof Error ? error.message : "운행 종료에 실패했습니다.");
+      await axiosInstance.put(`/api/drives/end/${driveId}`);
+      setEndSuccess(true);
+    } catch (e) {
+      setEndError('운행 종료에 실패했습니다.');
+    } finally {
+      setEndLoading(false);
     }
   };
 
