@@ -34,7 +34,18 @@ const DriveListPage: React.FC = () => {
       try {
         const res = await axiosInstance.get("/api/drives");
         const data = res.data;
-        setDrives(data.data?.content || []);
+        setDrives(
+          (data.data?.content || []).map((d: any) => ({
+            id: d.id,
+            memberName: d.member?.name || "알 수 없음",
+            vehicleNumber: d.vehicle?.vehicleNumber || "알 수 없음",
+            startDate: d.startDate ? d.startDate.replace("T", " ").slice(0, 16) : "",
+            endDate: d.endDate ? d.endDate.replace("T", " ").slice(0, 16) : "",
+            startLocation: d.startLocation || "알 수 없음",
+            endLocation: d.endLocation || "알 수 없음",
+            isStart: d.isStart,
+          }))
+        );
         setTotalElements(Number.isNaN(Number(data.data?.totalElements)) ? 0 : Number(data.data?.totalElements));
       } catch (e) {
         setError('운행 목록을 불러오지 못했습니다.');
@@ -69,7 +80,18 @@ const DriveListPage: React.FC = () => {
       try {
         const res = await axiosInstance.get("/api/drives");
         const data = res.data;
-        setDrives(data.data?.content || []);
+        setDrives(
+          (data.data?.content || []).map((d: any) => ({
+            id: d.id,
+            memberName: d.member?.name || "알 수 없음",
+            vehicleNumber: d.vehicle?.vehicleNumber || "알 수 없음",
+            startDate: d.startDate ? d.startDate.replace("T", " ").slice(0, 16) : "",
+            endDate: d.endDate ? d.endDate.replace("T", " ").slice(0, 16) : "",
+            startLocation: d.startLocation || "알 수 없음",
+            endLocation: d.endLocation || "알 수 없음",
+            isStart: d.isStart,
+          }))
+        );
         setTotalElements(Number.isNaN(Number(data.data?.totalElements)) ? 0 : Number(data.data?.totalElements));
       } catch (e) {
         setError('운행 목록을 불러오지 못했습니다.');
