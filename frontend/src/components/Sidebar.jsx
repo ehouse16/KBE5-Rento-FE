@@ -24,12 +24,12 @@ const Sidebar = ({ activeTab, setActiveTab }) => {
       icon: "fas fa-calendar-alt", 
       path: "/drives"
     },
-    {
-      id: "reports",
-      label: "운행 리포트",
-      icon: "fas fa-chart-bar",
-      path: "/reports"
-    },
+    // {
+    //   id: "reports",
+    //   label: "운행 리포트",
+    //   icon: "fas fa-chart-bar",
+    //   path: "/reports"
+    // },
     {
       id: "users",
       label: "사용자 관리",
