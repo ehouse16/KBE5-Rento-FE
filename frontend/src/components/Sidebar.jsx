@@ -36,6 +36,12 @@ const Sidebar = ({ activeTab, setActiveTab }) => {
       icon: "fas fa-user-cog",
       path: "/users"
     },
+    {
+      id: "realtime-event",
+      label: "실시간 이벤트",
+      icon: "fas fa-bolt",
+      path: "/realtime-event"
+    },
   ];
 
   // 현재 경로에 따라 activeTab 초기화 - 의존성 배열 수정
