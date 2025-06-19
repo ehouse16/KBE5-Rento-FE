@@ -1,8 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import styles from "./Header.module.css";
-import axiosInstance from "../utils/axios";
-import { removeFcmToken } from "./firebase/FirebaseToken";
 
 const Header = () => {
   const [loginId, setLoginId] = useState("");
@@ -17,44 +15,42 @@ const Header = () => {
 
   const handleLogout = async () => {
     const accessToken = localStorage.getItem("AccessToken") || localStorage.getItem("accessToken");
-    const fcmToken = localStorage.getItem("fcmToken");
-  
+    const refreshToken = localStorage.getItem("RefreshToken") || localStorage.getItem("refreshToken");
+    const API_BASE_URL = "https://api.rento.world";
+
     if (!accessToken) {
       alert("인증 토큰이 없습니다. 다시 로그인해 주세요.");
-      removeFcmToken();
-      setLoginId("");
+      localStorage.clear();
       navigate("/manager-login");
       return;
     }
-  
+
     try {
-      // 서버 로그아웃 요청
-      const logoutData = {};
-      if (fcmToken) {
-        logoutData.fcmToken = fcmToken;
-        console.log('Logout with FCM token:', fcmToken);
+      const response = await fetch(`${API_BASE_URL}/api/managers/logout`, {
+        method: "POST",
+        headers: {
+          AccessToken: accessToken,
+          RefreshToken: refreshToken || "",
+          "Content-Type": "application/json",
+        },
+      });
+
+      if (!response.ok) {
+        const errorData = await response.text();
+        console.error("로그아웃 실패 응답:", errorData);
+        throw new Error(`로그아웃 실패: ${response.status}`);
       }
-  
-      await axiosInstance.post("/api/managers/logout", logoutData);
-  
-      // ✅ FCM 토큰도 삭제
-      removeFcmToken();
-      console.log('[FCM] fcmToken removed after logout');
-  
+
+      localStorage.clear();
       setLoginId("");
       navigate("/");
     } catch (error) {
       console.error("로그아웃 실패:", error);
-  
-      // 에러 발생 시에도 전부 제거
-      removeFcmToken();
-      console.log('[FCM] fcmToken removed after logout error');
-  
+      localStorage.clear();
       setLoginId("");
       navigate("/manager-login");
     }
   };
-  
 
   const handleTitleClick = () => {
     navigate("/");
