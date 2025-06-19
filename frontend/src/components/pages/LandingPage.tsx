@@ -2,6 +2,12 @@ import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useCompany } from "../../contexts/CompanyContext";
 import axiosInstance from "../../utils/axios";
+import { removeFcmToken } from '../firebase/FirebaseToken';
+
+interface LogoutData {
+  managerId: string | null;
+  fcmToken?: string;
+}
 
 const LandingPage = () => {
   const navigate = useNavigate();
@@ -22,24 +28,56 @@ const LandingPage = () => {
     try {
       const accessToken = localStorage.getItem("accessToken");
       const refreshToken = localStorage.getItem("refreshToken");
+      const managerId = localStorage.getItem("managerId");
+      const fcmToken = localStorage.getItem("fcmToken");
 
       console.log("Logout attempt - Tokens:", { accessToken, refreshToken });
 
       if (!accessToken || !refreshToken) {
         console.log("No tokens found, clearing storage and redirecting");
+        // FCM 토큰 보존
+        const preservedFcmToken = localStorage.getItem("fcmToken");
         localStorage.clear();
+        if (preservedFcmToken) {
+          localStorage.setItem("fcmToken", preservedFcmToken);
+        }
         navigate("/manager-login");
         return;
       }
 
-      await axiosInstance.post("/api/managers/logout");
+      // 로그아웃 요청 시 FCM 토큰도 함께 전송
+      const logoutData: LogoutData = {
+        managerId: managerId
+      };
+      
+      if (fcmToken) {
+        logoutData.fcmToken = fcmToken;
+        console.log('Logout with FCM token:', fcmToken);
+      }
 
-      localStorage.clear();
+      await axiosInstance.post("/api/managers/logout", logoutData);
+
+      // 로그아웃 성공 후 FCM 토큰도 삭제
+      removeFcmToken();
+      console.log('[FCM] fcmToken removed after logout');
       navigate("/manager-login");
+      return;
     } catch (error) {
       console.error("Logout error:", error);
+      
+      // 에러 발생 시에도 FCM 토큰 보존
+      const preservedFcmToken = localStorage.getItem("fcmToken");
       localStorage.clear();
+      
+      if (preservedFcmToken) {
+        localStorage.setItem("fcmToken", preservedFcmToken);
+        console.log('FCM token preserved after logout error:', preservedFcmToken);
+      }
+      
+      removeFcmToken();
+      console.log('[FCM] fcmToken removed after logout error');
       navigate("/manager-login");
+      return;
     }
   };
 

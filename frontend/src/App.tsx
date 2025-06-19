@@ -13,11 +13,13 @@ import DriveListPage from './components/pages/DriveListPage';
 import DriveDetailPage from './components/drive/DriveDetailPage';
 import VehicleDetailPage from './components/vehicle/VehicleDetailPage';
 import RealTimeEventPage from './components/pages/RealTimeEventPage';
+import FirebaseToken from './components/firebase/FirebaseToken';
 
 function App() {
   return (
     <CompanyProvider>
       <Router>
+        <FirebaseToken />
         <Routes>
           {/* 헤더, 사이드바 필요 없는 페이지들 */}
           <Route path="/" element={<LandingPage />} />
