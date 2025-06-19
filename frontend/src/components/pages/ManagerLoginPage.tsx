@@ -36,9 +36,11 @@ const ManagerLoginPage: React.FC = () => {
     setLoading(true);
 
     try {
+      const fcmToken = localStorage.getItem('fcmToken');
       const response = await axiosInstance.post('/api/managers/login', {
         loginId: formData.loginId,
-        password: formData.password
+        password: formData.password,
+        fcmToken
       });
 
       const accessToken = response.headers['accesstoken'] || response.headers['AccessToken'];
