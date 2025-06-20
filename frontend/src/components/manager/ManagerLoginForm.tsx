@@ -62,6 +62,21 @@ const ManagerLoginForm: React.FC = () => {
     return null;
   };
 
+  // FCM 토큰을 서버에 전송하는 함수
+  const sendFcmToken = async () => {
+    try {
+      const fcmToken = await waitForFCMToken();
+      if (fcmToken) {
+        await axiosInstance.patch('/api/managers/fcm-token', {
+          token: fcmToken
+        });
+        console.log('FCM token sent to server successfully');
+      }
+    } catch (error) {
+      console.error('Failed to send FCM token:', error);
+    }
+  };
+
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
@@ -70,21 +85,11 @@ const ManagerLoginForm: React.FC = () => {
     try {
       console.log('Starting login process...');
   
-      // FCM 토큰 대기
-      const fcmToken = await waitForFCMToken();
-  
-      const loginData: any = {
+      const loginData = {
         companyCode,
         loginId,
         password
       };
-  
-      if (fcmToken) {
-        loginData.fcmToken = fcmToken;
-        console.log('FCM Token included in login request:', fcmToken);
-      } else {
-        console.log('No FCM Token available for login - proceeding without it');
-      }
   
       const response = await axiosInstance.post('/api/managers/login', loginData);
   
@@ -102,14 +107,8 @@ const ManagerLoginForm: React.FC = () => {
           localStorage.setItem('managerId', response.data.id.toString());
         }
   
-        // ✅ FCM 토큰도 다시 저장!
-        if (fcmToken) {
-          localStorage.setItem('fcmToken', fcmToken);
-          console.log('FCM Token saved to localStorage again:', fcmToken);
-        }
-  
-        // 플래그 제거
-        localStorage.removeItem('fcmTokenChanged');
+        // 로그인 성공 후 FCM 토큰 전송
+        await sendFcmToken();
   
         console.log('Login successful');
   

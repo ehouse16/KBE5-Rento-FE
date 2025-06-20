@@ -2,12 +2,17 @@ import axios from 'axios';
 
 const API_URL = process.env.REACT_APP_API_BASE_URL || 'https://api.rento.world';
 
+// 디버깅을 위한 로그 추가
+console.log('API_URL:', API_URL);
+console.log('Environment:', process.env.NODE_ENV);
+console.log('REACT_APP_API_BASE_URL:', process.env.REACT_APP_API_BASE_URL);
+
 const axiosInstance = axios.create({
   baseURL: API_URL,
   headers: {
     'Content-Type': 'application/json',
   },
-  withCredentials: true
+  withCredentials: false // CORS 문제 해결을 위해 false로 설정
 });
 
 // Request interceptor
@@ -17,6 +22,9 @@ axiosInstance.interceptors.request.use(
     const refreshToken = localStorage.getItem('refreshToken');
 
     console.log('Request interceptor - Tokens:', { accessToken, refreshToken });
+    console.log('Request URL:', config.url);
+    console.log('Request method:', config.method);
+    console.log('Request data:', config.data);
 
     if (accessToken) {
       config.headers['AccessToken'] = accessToken;
@@ -35,8 +43,14 @@ axiosInstance.interceptors.request.use(
 
 // Response interceptor
 axiosInstance.interceptors.response.use(
-  (response) => response,
+  (response) => {
+    console.log('Response received:', response.status, response.data);
+    return response;
+  },
   async (error) => {
+    console.error('Response error:', error.response?.status, error.response?.data);
+    console.error('Error config:', error.config);
+    
     const originalRequest = error.config;
 
     if (error.response?.status === 401 && !originalRequest._retry) {
@@ -53,7 +67,7 @@ axiosInstance.interceptors.response.use(
           null,
           {
             headers: { 'RefreshToken': refreshToken },
-            withCredentials: true
+            withCredentials: false
           }
         );
 

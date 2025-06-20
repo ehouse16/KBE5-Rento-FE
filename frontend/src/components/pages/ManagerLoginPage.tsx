@@ -30,17 +30,30 @@ const ManagerLoginPage: React.FC = () => {
     }));
   };
 
+  // FCM 토큰을 서버에 전송하는 함수
+  const sendFcmToken = async () => {
+    try {
+      const fcmToken = localStorage.getItem('fcmToken');
+      if (fcmToken) {
+        await axiosInstance.patch('/api/managers/fcm-token', {
+          token: fcmToken
+        });
+        console.log('FCM token sent to server successfully');
+      }
+    } catch (error) {
+      console.error('Failed to send FCM token:', error);
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
     setLoading(true);
 
     try {
-      const fcmToken = localStorage.getItem('fcmToken');
       const response = await axiosInstance.post('/api/managers/login', {
         loginId: formData.loginId,
-        password: formData.password,
-        fcmToken
+        password: formData.password
       });
 
       const accessToken = response.headers['accesstoken'] || response.headers['AccessToken'];
@@ -59,6 +72,9 @@ const ManagerLoginPage: React.FC = () => {
         setCompanyCode(response.data.companyCode);
       }
 
+      // 로그인 성공 후 FCM 토큰 전송
+      await sendFcmToken();
+
       navigate('/dashboard');
     } catch (error) {
       setError('로그인에 실패했습니다.');
@@ -69,56 +85,55 @@ const ManagerLoginPage: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center bg-gray-50 p-4">
-      <div className="w-full max-w-md">
-        <div className="text-center mb-10">
-          <h1 className="text-4xl font-bold text-green-600 mb-2">Rento 포털</h1>
-          <p className="text-gray-600">안전하고 편리한 차량 관제및 관리 시스템</p>
+    <div className="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
+      <div className="max-w-md w-full space-y-8">
+        <div>
+          <h2 className="mt-6 text-center text-3xl font-extrabold text-gray-900">매니저 로그인</h2>
         </div>
-        <div className="bg-white rounded-lg shadow-xl p-8 transition-all duration-300">
-          <form onSubmit={handleSubmit} className="space-y-6">
+        <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
+          <div className="rounded-md shadow-sm -space-y-px">
             <div>
-              <label htmlFor="loginId" className="block text-sm font-medium text-gray-700">
-                아이디
-              </label>
+              <label htmlFor="loginId" className="sr-only">아이디</label>
               <input
-                type="text"
                 id="loginId"
                 name="loginId"
+                type="text"
+                required
+                className="appearance-none rounded-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-t-md focus:outline-none focus:ring-green-500 focus:border-green-500 focus:z-10 sm:text-sm"
+                placeholder="아이디"
                 value={formData.loginId}
                 onChange={handleChange}
-                className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-green-500 focus:border-green-500"
-                required
               />
             </div>
             <div>
-              <label htmlFor="password" className="block text-sm font-medium text-gray-700">
-                비밀번호
-              </label>
+              <label htmlFor="password" className="sr-only">비밀번호</label>
               <input
-                type="password"
                 id="password"
                 name="password"
+                type="password"
+                required
+                className="appearance-none rounded-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-b-md focus:outline-none focus:ring-green-500 focus:border-green-500 focus:z-10 sm:text-sm"
+                placeholder="비밀번호"
                 value={formData.password}
                 onChange={handleChange}
-                className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-green-500 focus:border-green-500"
-                required
               />
             </div>
-            {error && (
-              <div className="text-red-600 text-sm">
-                {error}
-              </div>
-            )}
-            <button
-              type="submit"
-              className="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500"
-              disabled={loading}
-            >
-              {loading ? '로그인 중...' : '로그인'}
-            </button>
-          </form>
-        </div>
+          </div>
+
+          {error && (
+            <div className="text-red-600 text-sm text-center">
+              {error}
+            </div>
+          )}
+
+          <button
+            type="submit"
+            className="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500"
+            disabled={loading}
+          >
+            {loading ? '로그인 중...' : '로그인'}
+          </button>
+        </form>
       </div>
     </div>
   );
