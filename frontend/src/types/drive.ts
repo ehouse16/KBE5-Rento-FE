@@ -40,3 +40,8 @@ export interface DriveDetail {
   distance: number;
   isStart: boolean;
 }
+
+export interface PathPoint {
+  latitude: number;
+  longitude: number;
+}

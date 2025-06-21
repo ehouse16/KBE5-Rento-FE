@@ -1,37 +1,51 @@
 import React, { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { DriveDetail } from "../../types/drive";
+import { DriveDetail, PathPoint } from "../../types/drive";
 import Header from "../Header";
 import Footer from "../Footer";
 import Sidebar from "../Sidebar";
 import axiosInstance from '../../utils/axios';
+import KakaoMap from "./KakaoMap";
 
 const DriveDetailPage: React.FC = () => {
   const { driveId } = useParams<{ driveId: string }>();
   const navigate = useNavigate();
   const [driveDetail, setDriveDetail] = useState<DriveDetail | null>(null);
+  const [path, setPath] = useState<PathPoint[] | null>(null);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const [apiError, setApiError] = useState<string | null>(null);
   const [endLoading, setEndLoading] = useState(false);
   const [endSuccess, setEndSuccess] = useState(false);
   const [endError, setEndError] = useState<string | null>(null);
 
   useEffect(() => {
-    const fetchDriveDetail = async () => {
+    const fetchDriveData = async () => {
       if (!driveId) return;
       setLoading(true);
+      setApiError(null);
       try {
-        const response = await axiosInstance.get(`/api/drives/${driveId}`);
-        const data = await response.data;
-        setDriveDetail(data.data || data.result || data);
+        // 운행 상세 정보와 경로 정보를 동시에 요청
+        const [detailResponse, pathResponse] = await Promise.all([
+          axiosInstance.get(`/api/drives/${driveId}`),
+          axiosInstance.get(`/api/cycleInfoSummary/${driveId}`)
+        ]);
+
+        const detailData = detailResponse.data;
+        setDriveDetail(detailData.data || detailData.result || detailData);
+        
+        const pathData = pathResponse.data;
+        // 백엔드 응답이 바로 배열일 경우를 처리
+        setPath(Array.isArray(pathData) ? pathData : pathData.data || pathData.result || []);
+
       } catch (e) {
-        setError('운행 정보를 불러오지 못했습니다.');
+        console.error("Failed to fetch drive data:", e);
+        setApiError('운행 정보를 불러오지 못했습니다.');
       } finally {
         setLoading(false);
       }
     };
 
-    fetchDriveDetail();
+    fetchDriveData();
   }, [driveId]);
 
   const formatDate = (dateString: string | null): string => {
@@ -61,6 +75,14 @@ const DriveDetailPage: React.FC = () => {
     );
   }
 
+  if (apiError) {
+    return (
+      <div className="min-h-screen bg-white flex items-center justify-center">
+        <div className="text-xl text-red-500">{apiError}</div>
+      </div>
+    );
+  }
+  
   if (!driveDetail) {
     return (
       <div className="min-h-screen bg-white flex items-center justify-center">
@@ -186,6 +208,14 @@ const DriveDetailPage: React.FC = () => {
                 </div>
               </div>
             </div>
+
+            {/* 이동 경로 맵 */}
+            {!driveDetail.isStart && path && path.length > 0 && (
+              <div className="bg-white rounded-xl shadow-md p-6 mb-6">
+                <h3 className="text-lg font-bold mb-4">이동 경로</h3>
+                <KakaoMap path={path} />
+              </div>
+            )}
 
             {/* 운행 종료 버튼 (운행 중일 때만 표시) */}
             {driveDetail.isStart && (
