@@ -168,7 +168,6 @@ const VehicleAddModal: React.FC<Props> = ({ open, onClose, onSuccess, department
     console.log('handleSubmit departments:', departments);
     if (Object.keys(errors).length === 0) {
       try {
-        const accessToken = localStorage.getItem('accessToken');
         const payload = {
           ...formData,
           departmentId:

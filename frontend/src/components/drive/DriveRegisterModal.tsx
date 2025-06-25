@@ -66,9 +66,9 @@ const DriveRegisterModal: React.FC<DriveRegisterModalProps> = ({ open, onClose, 
         onClose();
         return;
       }
-      axiosInstance.get(`/api/members?companyCode=${companyCode}`, { headers: { AccessToken: localStorage.getItem("accessToken") || "" } })
+      axiosInstance.get(`/api/members?companyCode=${companyCode}`)
         .then(res => setMembers(res.data.data || []));
-      axiosInstance.get("/api/vehicles?onlyFree=true", { headers: { AccessToken: localStorage.getItem("accessToken") || "" } })
+      axiosInstance.get("/api/vehicles?onlyFree=true")
         .then(res => {
           setVehicles(res.data.data?.content || []);
         });
@@ -124,7 +124,7 @@ const DriveRegisterModal: React.FC<DriveRegisterModalProps> = ({ open, onClose, 
         endDateTime: formData.endDateTime,
       };
       console.log("payload", payload);
-      const res = await axiosInstance.post("/api/drives", payload, { headers: { AccessToken: localStorage.getItem("accessToken") || "" } });
+      const res = await axiosInstance.post("/api/drives", payload);
       onSuccess();
       onClose();
     } catch (err) {

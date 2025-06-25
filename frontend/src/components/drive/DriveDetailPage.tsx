@@ -213,7 +213,23 @@ const DriveDetailPage: React.FC = () => {
             {!driveDetail.isStart && path && path.length > 0 && (
               <div className="bg-white rounded-xl shadow-md p-6 mb-6">
                 <h3 className="text-lg font-bold mb-4">이동 경로</h3>
-                <KakaoMap path={path} />
+                {/* 출발/도착 마커 생성 */}
+                {(() => {
+                  const markers = [];
+                  if (path && path.length > 0) {
+                    markers.push({
+                      lat: path[0].latitude,
+                      lng: path[0].longitude,
+                      label: '출발',
+                    });
+                    markers.push({
+                      lat: path[path.length - 1].latitude,
+                      lng: path[path.length - 1].longitude,
+                      label: '도착',
+                    });
+                  }
+                  return <KakaoMap path={path} markers={markers} />;
+                })()}
               </div>
             )}
 

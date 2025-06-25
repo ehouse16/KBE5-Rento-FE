@@ -13,6 +13,7 @@
     "@types/react-dom": "^19.1.5",
     "@types/react-router-dom": "^5.3.3",
     "axios": "^1.9.0",
+    "event-source-polyfill": "^1.0.31",
     "firebase": "^11.9.1",
     "react": "^19.1.0",
     "react-dom": "^19.1.0",
@@ -48,6 +49,7 @@
   },
   "devDependencies": {
     "@craco/craco": "^7.1.0",
+    "@types/event-source-polyfill": "^1.0.5",
     "autoprefixer": "^10.4.17",
     "postcss": "^8.4.35"
   },

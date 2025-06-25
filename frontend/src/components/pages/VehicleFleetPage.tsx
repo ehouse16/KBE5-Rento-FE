@@ -33,7 +33,6 @@ const VehicleFleetPage: React.FC = () => {
   // 부서 목록 불러오기
   useEffect(() => {
     const fetchDepartments = async () => {
-      const accessToken = localStorage.getItem('accessToken');
       const companyCode = localStorage.getItem('companyCode');
       if (!companyCode) return;
       const res = await axiosInstance.get(`/api/departments?companyCode=${companyCode}`);
@@ -51,7 +50,6 @@ const VehicleFleetPage: React.FC = () => {
 
   // 차량 목록 불러오기 함수 분리
   const fetchVehicles = async () => {
-    const accessToken = localStorage.getItem('accessToken');
     const params = new URLSearchParams();
     if (departmentFilter !== 'all') params.append('departmentId', departmentFilter);
     if (onlyFree) params.append('onlyFree', 'true');

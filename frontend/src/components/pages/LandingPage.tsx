@@ -35,7 +35,6 @@ const LandingPage = () => {
 
       if (!accessToken || !refreshToken) {
         console.log("No tokens found, clearing storage and redirecting");
-        // FCM 토큰 보존
         const preservedFcmToken = localStorage.getItem("fcmToken");
         localStorage.clear();
         if (preservedFcmToken) {
@@ -108,18 +107,18 @@ const LandingPage = () => {
           <h1 className="text-4xl font-bold text-green-500">RENTO</h1>
         </div>
         <div className="space-y-4 w-full">
-          <button
+          {/* <button
             onClick={() => navigate("/company-register")}
             className="w-full bg-green-500 text-white px-6 py-3 rounded-lg hover:bg-green-600 transition-colors"
           >
             회사 등록
-          </button>
-          <button
+          </button> */}
+          {/* <button
             onClick={() => navigate("/manager-register")}
             className="w-full bg-green-500 text-white px-6 py-3 rounded-lg hover:bg-green-600 transition-colors"
           >
             매니저 등록
-          </button>
+          </button> */}
           {!isLoggedIn && (
             <button
               onClick={() => navigate("/manager-login")}

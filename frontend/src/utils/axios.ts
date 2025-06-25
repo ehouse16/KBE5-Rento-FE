@@ -18,6 +18,15 @@ const axiosInstance = axios.create({
 // Request interceptor
 axiosInstance.interceptors.request.use(
   (config) => {
+    // 로그인, 회원가입 등 토큰이 필요 없는 요청은 제외
+    if (
+      config.url?.includes('/api/managers/login') ||
+      config.url?.includes('/api/managers/register') ||
+      config.url?.includes('/api/managers/sign-up')
+    ) {
+      return config;
+    }
+
     const accessToken = localStorage.getItem('accessToken');
     const refreshToken = localStorage.getItem('refreshToken');
 

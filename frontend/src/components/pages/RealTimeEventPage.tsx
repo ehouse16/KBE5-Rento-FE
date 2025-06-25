@@ -1,63 +1,129 @@
 import React, { useEffect, useState, useRef } from 'react';
-import axios from 'axios';
+import { EventSourcePolyfill } from 'event-source-polyfill';
+import KakaoMap from '../drive/KakaoMap';
+import { PathPoint } from '../../types/drive';
 
-interface EventData {
-  id: number;
-  [key: string]: any;
+interface Marker {
+  lat: number;
+  lng: number;
+  label?: string;
 }
 
-const API_URL = 'https://api.rento.world/api/events/cycle-info/get-list';
+// 여러 차량의 경로와 마커를 차량ID별로 관리
+interface VehiclePathMap {
+  [vehicleId: string]: PathPoint[];
+}
+interface VehicleMarkerMap {
+  [vehicleId: string]: Marker;
+}
 
 const RealTimeEventPage: React.FC = () => {
-  const [events, setEvents] = useState<EventData[]>([]);
-  const [isRunning, setIsRunning] = useState(false);
-  const intervalRef = useRef<NodeJS.Timeout | null>(null);
+  const [vehiclePaths, setVehiclePaths] = useState<VehiclePathMap>({});
+  const [vehicleMarkers, setVehicleMarkers] = useState<VehicleMarkerMap>({});
+  const [trackingStatus, setTrackingStatus] = useState('서버에 연결 중...');
+  const eventQueueRef = useRef<any[]>([]); // 이벤트 큐
+  const API_BASE_URL = process.env.REACT_APP_API_BASE_URL;
 
   useEffect(() => {
-    if (isRunning) {
-      fetchEvents(); // 버튼 누르자마자 1회 호출
-      intervalRef.current = setInterval(fetchEvents, 10000);
-    } else {
-      setEvents([]); // 중지 시 이벤트 초기화
-      if (intervalRef.current) clearInterval(intervalRef.current);
+    const token = localStorage.getItem('accessToken');
+    if (!token) {
+      setTrackingStatus('로그인이 필요합니다. SSE 연결을 시작할 수 없습니다.');
+      setVehicleMarkers({});
+      return;
     }
-    return () => {
-      if (intervalRef.current) clearInterval(intervalRef.current);
+
+    setTrackingStatus('SSE 구독 요청 중...');
+    const eventSource = new EventSource(`${API_BASE_URL}/api/stream/subscribe?token=${token}`);
+
+    eventSource.addEventListener('cycle-info', (event) => {
+      const messageEvent = event as MessageEvent<any>;
+      if (!messageEvent.data) return;
+      try {
+        const data = JSON.parse(messageEvent.data);
+        // 큐에 추가
+        eventQueueRef.current.push(data);
+      } catch (e) {}
+    });
+
+    eventSource.addEventListener('heartbeat', () => {
+      // ping은 큐에 넣지 않음
+    });
+
+    eventSource.onerror = () => {
+      setTrackingStatus('연결 오류 발생. 자동 재연결을 시도합니다.');
     };
-  }, [isRunning]);
 
-  const fetchEvents = async () => {
-    try {
-      const res = await axios.get(API_URL);
-      setEvents(res.data); // 새 데이터로만 갱신
-    } catch (err) {
-      console.error('이벤트 데이터 불러오기 실패:', err);
-    }
+    return () => {
+      eventSource.close();
+    };
+  }, [API_BASE_URL]);
+
+  // 초당 1개씩 큐에서 꺼내서 상태 갱신
+  useEffect(() => {
+    const interval = setInterval(() => {
+      if (eventQueueRef.current.length > 0) {
+        const data = eventQueueRef.current.shift();
+        if (data && data.latitude && data.longitude && data.mdn) {
+          const vehicleId = data.mdn.toString();
+          const newPathPoint: PathPoint = {
+            latitude: data.latitude,
+            longitude: data.longitude
+          };
+          setVehiclePaths(prev => {
+            const prevPath = prev[vehicleId] || [];
+            const last = prevPath[prevPath.length - 1];
+            if (last && Math.abs(last.latitude - data.latitude) < 0.0001 && Math.abs(last.longitude - data.longitude) < 0.0001) {
+              return prev;
+            }
+            return { ...prev, [vehicleId]: [...prevPath, newPathPoint] };
+          });
+          setVehicleMarkers(prev => ({
+            ...prev,
+            [vehicleId]: {
+              lat: data.latitude,
+              lng: data.longitude,
+              label: `차량MDN: ${vehicleId}`
+            }
+          }));
+        }
+      }
+    }, 1000);
+    return () => clearInterval(interval);
+  }, []);
+
+  // 경로 초기화
+  const handleClearPath = () => {
+    setVehiclePaths({});
   };
 
-  const handleStart = () => {
-    setIsRunning(true);
-  };
+  // 전체 경로 포인트 개수
+  const totalPoints = Object.values(vehiclePaths).reduce((acc, arr) => acc + arr.length, 0);
 
   return (
-    <div style={{ padding: '2rem' }}>
-      <h2 style={{ fontSize: '1.5rem', fontWeight: 'bold', marginBottom: '1rem' }}>실시간 이벤트</h2>
-      {!isRunning ? (
-        <button onClick={handleStart} style={{ padding: '0.5rem 1.5rem', fontSize: '1rem', background: '#22c55e', color: '#fff', border: 'none', borderRadius: '6px', cursor: 'pointer' }}>
-          실행
-        </button>
-      ) : (
-        <ul style={{ maxHeight: '60vh', overflowY: 'auto', background: '#f9f9f9', borderRadius: '8px', padding: '1rem', marginTop: '1rem' }}>
-          {events.length === 0 && <li>이벤트가 없습니다.</li>}
-          {events.map((event, idx) => (
-            <li key={event.id || idx} style={{ marginBottom: '0.5rem', borderBottom: '1px solid #eee', paddingBottom: '0.5rem', fontSize: '0.9rem' }}>
-              {Object.entries(event).map(([key, value]) => (
-                <span key={key} style={{ marginRight: '1rem' }}><b>{key}:</b> {String(value)} </span>
-              ))}
-            </li>
-          ))}
-        </ul>
-      )}
+    <div>
+      <h1 className="text-2xl font-bold mb-4">실시간 관제</h1>
+      <div className="mb-4 p-4 bg-gray-100 border border-gray-200 rounded-lg shadow-sm">
+        <div className="flex justify-between items-center">
+          <p className="text-sm font-semibold text-gray-800">
+            연결 상태: <span className="text-blue-600 font-bold">{trackingStatus}</span>
+          </p>
+          <div className="flex gap-2">
+            <button
+              onClick={handleClearPath}
+              className="px-3 py-1 bg-red-500 text-white text-sm rounded hover:bg-red-600 transition-colors"
+            >
+              경로 초기화
+            </button>
+            <span className="text-sm text-gray-600">
+              전체 경로 포인트: {totalPoints}개
+            </span>
+            <span className="text-sm text-gray-600">
+              차량 수: {Object.keys(vehiclePaths).length}대
+            </span>
+          </div>
+        </div>
+      </div>
+      <KakaoMap vehiclePaths={vehiclePaths} vehicleMarkers={vehicleMarkers} />
     </div>
   );
 };

@@ -16,7 +16,7 @@ const Header = () => {
   }, []);
 
   const handleLogout = async () => {
-    const accessToken = localStorage.getItem("AccessToken") || localStorage.getItem("accessToken");
+    const accessToken = localStorage.getItem("accessToken");
     const fcmToken = localStorage.getItem("fcmToken");
   
     if (!accessToken) {

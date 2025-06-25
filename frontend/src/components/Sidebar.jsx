@@ -13,6 +13,18 @@ const Sidebar = ({ activeTab, setActiveTab }) => {
       path: "/dashboard"
     },
     {
+      id: "realtime-event",
+      label: "실시간 관제",
+      icon: "fas fa-bolt",
+      path: "/realtime-event"
+    },
+    {
+      id: "users",
+      label: "사용자 관리",
+      icon: "fas fa-user-cog",
+      path: "/users"
+    },
+    {
       id: "vehicles",
       label: "차량 관리",
       icon: "fas fa-car",
@@ -23,25 +35,7 @@ const Sidebar = ({ activeTab, setActiveTab }) => {
       label: "예약 관리",
       icon: "fas fa-calendar-alt", 
       path: "/drives"
-    },
-    // {
-    //   id: "reports",
-    //   label: "운행 리포트",
-    //   icon: "fas fa-chart-bar",
-    //   path: "/reports"
-    // },
-    {
-      id: "users",
-      label: "사용자 관리",
-      icon: "fas fa-user-cog",
-      path: "/users"
-    },
-    {
-      id: "realtime-event",
-      label: "실시간 이벤트",
-      icon: "fas fa-bolt",
-      path: "/realtime-event"
-    },
+    }
   ];
 
   // 현재 경로에 따라 activeTab 초기화 - 의존성 배열 수정
