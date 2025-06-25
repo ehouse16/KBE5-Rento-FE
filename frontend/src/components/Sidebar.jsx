@@ -58,7 +58,7 @@ const Sidebar = ({ activeTab, setActiveTab }) => {
 
   return (
     <aside className="w-64 bg-white shadow-sm border-r border-gray-200 min-h-screen">
-      <div className="p-6">
+      <div className="sticky top-6 bg-white z-20 p-6">
         <h3 className="text-lg font-semibold text-gray-800 mb-6">메뉴</h3>
         <nav className="space-y-2">
           {menuItems.map((item) => (
@@ -76,21 +76,19 @@ const Sidebar = ({ activeTab, setActiveTab }) => {
             </button>
           ))}
         </nav>
-      </div>
-      
-      {/* 하단 도움말 섹션 */}
-      <div className="mb-4 mx-4">
-        <div className="bg-blue-50 rounded-lg p-4">
-          <div className="flex items-center mb-2">
-            <i className="fas fa-question-circle text-blue-500 mr-2"></i>
-            <span className="text-sm font-medium text-blue-900">도움이 필요하신가요?</span>
+        <div className="mb-4 mx-4 mt-6">
+          <div className="bg-blue-50 rounded-lg p-4">
+            <div className="flex items-center mb-2">
+              <i className="fas fa-question-circle text-blue-500 mr-2"></i>
+              <span className="text-sm font-medium text-blue-900">도움이 필요하신가요?</span>
+            </div>
+            <p className="text-xs text-blue-700 mb-3">
+              사용 가이드를 확인하거나 고객지원팀에 문의하세요.
+            </p>
+            <button className="text-xs bg-blue-500 text-white px-3 py-1 rounded-md hover:bg-blue-600 transition-colors">
+              도움말 보기
+            </button>
           </div>
-          <p className="text-xs text-blue-700 mb-3">
-            사용 가이드를 확인하거나 고객지원팀에 문의하세요.
-          </p>
-          <button className="text-xs bg-blue-500 text-white px-3 py-1 rounded-md hover:bg-blue-600 transition-colors">
-            도움말 보기
-          </button>
         </div>
       </div>
     </aside>
