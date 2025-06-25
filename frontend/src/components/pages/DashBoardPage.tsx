@@ -161,10 +161,12 @@ const DashboardPage: React.FC = () => {
     const fetchYearlyStats = async () => {
       try {
         const requests = months.map((m) =>
-          axiosInstance.post('/api/monthly/stats', {
-            companyCode,
-            year: selectedYear,
-            month: m,
+          axiosInstance.get('/api/monthly/stats', {
+            params: {
+              companyCode,
+              year: selectedYear,
+              month: m,
+            }
           })
         );
         const results = await Promise.allSettled(requests);
@@ -193,6 +195,46 @@ const DashboardPage: React.FC = () => {
     };
     fetchYearlyStats();
   }, [companyCode, selectedYear]);
+
+  // 선택 연/월 데이터만 받아오기 (카드/비율용)
+  useEffect(() => {
+    if (!companyCode) return;
+    const fetchMonthlyStat = async () => {
+      try {
+        const res = await axiosInstance.get('/api/monthly/stats', {
+          params: {
+            companyCode,
+            year: selectedYear,
+            month: selectedMonth,
+          }
+        });
+        const stat = res.data?.data || {};
+        const monthLabel = `${selectedYear}.${String(selectedMonth).padStart(2, '0')}`;
+        setMonthlyStats((prev) => {
+          // 그래프용은 그대로 두고, 카드/비율용만 최신 값으로 갱신
+          const updated = prev.map(s => s.month === selectedMonth ? { ...stat, monthLabel, month: selectedMonth } : s);
+          // 만약 그래프용 데이터가 없으면 한 개만 추가
+          if (updated.length === 0) return [{ ...stat, monthLabel, month: selectedMonth }];
+          return updated;
+        });
+      } catch (e) {
+        // 그래프용 데이터는 그대로 두고, 카드/비율용만 0으로 갱신
+        setMonthlyStats((prev) => prev.map(s => s.month === selectedMonth ? {
+          year: selectedYear,
+          month: selectedMonth,
+          totalDistance: 0,
+          totalDrivingTime: 0,
+          totalDrivingCnt: 0,
+          avgSpeed: 0,
+          businessRatio: 0,
+          commuteRatio: 0,
+          nonBusinessRatio: 0,
+          monthLabel: `${selectedYear}.${String(selectedMonth).padStart(2, '0')}`
+        } : s));
+      }
+    };
+    fetchMonthlyStat();
+  }, [companyCode, selectedYear, selectedMonth]);
 
   const latest = monthlyStats.find((s) => s.month === selectedMonth) || {
     year: selectedYear,
@@ -285,6 +327,7 @@ const DashboardPage: React.FC = () => {
                   ))}
                 </Pie>
               </PieChart>
+              <div className="text-gray-500 text-base">운행 비율</div>
             </div>
             <div className="flex flex-col gap-1 mt-4 text-base">
               <span className="flex items-center"><span className="w-3 h-3 rounded-full mr-1" style={{background: COLORS[0]}}></span>업무용 <span className="ml-1 font-semibold text-[#22c55e]">{donutData[0].value.toFixed(1)}%</span></span>
