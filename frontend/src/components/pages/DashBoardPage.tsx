@@ -285,8 +285,6 @@ const DashboardPage: React.FC = () => {
                   ))}
                 </Pie>
               </PieChart>
-              <div className="text-center text-[#22c55e] font-bold text-2xl mt-2">{donutData[0].value.toFixed(1)}%</div>
-              <div className="text-gray-500 text-base">업무용 운행 비율</div>
             </div>
             <div className="flex flex-col gap-1 mt-4 text-base">
               <span className="flex items-center"><span className="w-3 h-3 rounded-full mr-1" style={{background: COLORS[0]}}></span>업무용 <span className="ml-1 font-semibold text-[#22c55e]">{donutData[0].value.toFixed(1)}%</span></span>
