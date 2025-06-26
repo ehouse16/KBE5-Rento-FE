@@ -464,7 +464,7 @@ const UserManagementPage: React.FC = () => {
         </div>
         {/* 탭 */}
         <div className="bg-white rounded-md shadow-sm mb-6">
-          <div className="flex justify-end border-b">
+          <div className="flex justify-start border-b">
             <button
               className={`px-6 py-3 text-sm font-medium ${activeTab === 'users' ? 'text-[#2ECC71] border-b-2 border-[#2ECC71]' : 'text-gray-600'}`}
               onClick={() => setActiveTab('users')}
