@@ -97,23 +97,21 @@ const VehicleFleetPage: React.FC = () => {
       <div className="flex flex-1">
         <Sidebar activeTab={activeTab} setActiveTab={setActiveTab} />
         <main className="flex-1 p-6">
-          <div className="flex items-end gap-4 mb-4">
-            <div className="flex-[2] min-w-[300px]">
-              <VehicleFilter
-                departments={departments}
-                departmentFilter={departmentFilter}
-                setDepartmentFilter={setDepartmentFilter}
-                onlyFree={onlyFree}
-                setOnlyFree={setOnlyFree}
-                search={search}
-                setSearch={setSearch}
-              />
-            </div>
-            <div className="flex-shrink-0">
-              <VehicleAddButton onClick={() => setAddModalOpen(true)} />
-            </div>
-          </div>
           <VehicleStats vehicles={vehicles} />
+          <div className="flex justify-end items-center mb-2">
+            <VehicleAddButton onClick={() => setAddModalOpen(true)} />
+          </div>
+          <div className="flex-[2] min-w-[300px]">
+            <VehicleFilter
+              departments={departments}
+              departmentFilter={departmentFilter}
+              setDepartmentFilter={setDepartmentFilter}
+              onlyFree={onlyFree}
+              setOnlyFree={setOnlyFree}
+              search={search}
+              setSearch={setSearch}
+            />
+          </div>
           <VehicleTable
             vehicles={vehicles}
             sortConfig={sortConfig}
