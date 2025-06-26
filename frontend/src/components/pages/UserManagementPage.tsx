@@ -4,6 +4,135 @@ import { Department, DepartmentRegisterRequest, DepartmentUpdateRequest, getDepa
 import { handleApiError } from '../../utils/errorHandler';
 import { useCompany } from '../../contexts/CompanyContext';
 import axiosInstance from '../../utils/axios';
+import VehiclePagination from '../vehicle/VehiclePagination';
+import { PieChart, Pie, Cell, Legend, ResponsiveContainer, Tooltip } from 'recharts';
+
+const COLORS = [
+  '#2ECC71', '#3498DB', '#F39C12', '#E74C3C', '#9B59B6', '#1ABC9C', '#34495E', '#E67E22', '#95A5A6', '#16A085',
+];
+
+// UserStats 컴포넌트 (원형그래프)
+const UserStats: React.FC<{ users: Member[]; departments: Department[]; positions: string[] }> = ({ users, departments, positions }) => {
+  // 부서별 인원수 (전체 users 기준)
+  const deptStats = departments.map(dept => ({
+    name: dept.departmentName,
+    value: users.filter(u => u.departmentName === dept.departmentName).length
+  })).filter(d => d.value > 0);
+  // 직책별 인원수 (전체 users 기준)
+  const posStats = positions.map(pos => ({
+    name: pos,
+    value: users.filter(u => u.position === pos).length
+  })).filter(p => p.value > 0);
+  const total = users.length;
+  return (
+    <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+      {/* 총 사용자 */}
+<div className="bg-white p-5 rounded-lg shadow-sm border border-gray-100 flex flex-col justify-center items-center h-full min-h-[220px]">
+  <div className="flex flex-col items-center justify-center h-full">
+    <div className="bg-green-100 p-3 rounded-full mb-4">
+      <i className="fas fa-user text-green-500 text-2xl"></i>
+    </div>
+    <p className="text-gray-500 text-sm mb-1">총 사용자</p>
+    <h3 className="text-3xl font-bold">{total}</h3>
+  </div>
+</div>
+{/* 부서별 도넛 차트 */}
+<div className="bg-white p-5 rounded-lg shadow-sm border border-gray-100 relative min-h-[260px] flex flex-col items-center">
+  <p className="text-gray-500 text-sm mb-2 text-center w-full">부서별 분포</p>
+  <div className="w-full relative" style={{ height: 180 }}>
+    <div style={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)' }}>
+      <ResponsiveContainer width={160} height={160}>
+        <PieChart>
+          <Pie
+            data={deptStats}
+            dataKey="value"
+            nameKey="name"
+            cx="50%"
+            cy="50%"
+            innerRadius={40}
+            outerRadius={60}
+            paddingAngle={2}
+            label={false}
+          >
+            {deptStats.map((entry, idx) => (
+              <Cell key={`cell-dept-${entry.name}`} fill={COLORS[idx % COLORS.length]} />
+            ))}
+          </Pie>
+          <Tooltip
+            formatter={(value, name, props) => {
+              const num = Number(value);
+              return [`${num}명 (${total ? Math.round((num / total) * 100) : 0}%)`, name];
+            }}
+            wrapperStyle={{ zIndex: 1000 }}
+          />
+        </PieChart>
+      </ResponsiveContainer>
+    </div>
+  </div>
+  <ul className="mt-2 space-y-1 w-full text-center">
+    {deptStats.length === 0 && <li className="text-gray-400 text-sm">-</li>}
+    {deptStats.slice(0, 3).map((d, idx) => (
+      <li key={d.name} className="flex items-center justify-center text-sm text-gray-700">
+        <span className="inline-block w-3 h-3 rounded-full mr-2" style={{ background: COLORS[idx % COLORS.length] }}></span>
+        {d.name}: <span className="font-semibold ml-1">{d.value}</span>명
+        <span className="ml-2 text-xs text-gray-500">({total ? Math.round((d.value / total) * 100) : 0}%)</span>
+      </li>
+    ))}
+    {deptStats.length > 3 && (
+      <li className="text-gray-400 text-xs">+{posStats.slice(3).length} 더보기 (다른 직책도 확인하려면 그래프에 마우스를 올려주세요)</li>
+    )}
+  </ul>
+</div>
+{/* 직책별 도넛 차트 */}
+<div className="bg-white p-5 rounded-lg shadow-sm border border-gray-100 relative min-h-[260px] flex flex-col items-center">
+  <p className="text-gray-500 text-sm mb-2 text-center w-full">직책별 분포</p>
+  <div className="w-full relative" style={{ height: 180 }}>
+    <div style={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)' }}>
+      <ResponsiveContainer width={160} height={160}>
+        <PieChart>
+          <Pie
+            data={posStats}
+            dataKey="value"
+            nameKey="name"
+            cx="50%"
+            cy="50%"
+            innerRadius={40}
+            outerRadius={60}
+            paddingAngle={2}
+            label={false}
+          >
+            {posStats.map((entry, idx) => (
+              <Cell key={`cell-pos-${entry.name}`} fill={COLORS[idx % COLORS.length]} />
+            ))}
+          </Pie>
+          <Tooltip
+            formatter={(value, name, props) => {
+              const num = Number(value);
+              return [`${num}명 (${total ? Math.round((num / total) * 100) : 0}%)`, name];
+            }}
+            wrapperStyle={{ zIndex: 1000 }}
+          />
+        </PieChart>
+      </ResponsiveContainer>
+    </div>
+  </div>
+  <ul className="mt-2 space-y-1 w-full text-center">
+    {posStats.length === 0 && <li className="text-gray-400 text-sm">-</li>}
+    {posStats.slice(0, 3).map((p, idx) => (
+      <li key={p.name} className="flex items-center justify-center text-sm text-gray-700">
+        <span className="inline-block w-3 h-3 rounded-full mr-2" style={{ background: COLORS[idx % COLORS.length] }}></span>
+        {p.name}: <span className="font-semibold ml-1">{p.value}</span>명
+        <span className="ml-2 text-xs text-gray-500">({total ? Math.round((p.value / total) * 100) : 0}%)</span>
+      </li>
+    ))}
+    {posStats.length > 3 && (
+      <li className="text-gray-400 text-xs">+{posStats.slice(3).length} 더보기 (다른 직책도 확인하려면 그래프에 마우스를 올려주세요)</li>
+    )}
+  </ul>
+</div>
+</div>
+  );
+};
 
 const UserManagementPage: React.FC = () => {
   const { companyCode: contextCompanyCode } = useCompany();
@@ -51,48 +180,52 @@ const UserManagementPage: React.FC = () => {
   const [userPositionFilter, setUserPositionFilter] = useState<string>('전체');
   // Add search state
   const [userSearch, setUserSearch] = useState<string>('');
+  // Pagination state
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage, setItemsPerPage] = useState(5);
+  const [totalElements, setTotalElements] = useState(0);
 
   // 초기 데이터 로드
   useEffect(() => {
     const loadInitialData = async () => {
       try {
         const storedCompanyCode = localStorage.getItem('companyCode');
-        console.log('Stored company code:', storedCompanyCode);
-        
         if (!storedCompanyCode) {
           setError('회사 코드가 없습니다. 다시 로그인해주세요.');
           return;
         }
-
-        const [usersResponse, departmentsResponse, positionsResponse] = await Promise.all([
-          getMembers(storedCompanyCode as string),
+        // 사용자 목록은 여기서 불러오지 않음!
+        const [departmentsResponse, positionsResponse] = await Promise.all([
           getDepartments(storedCompanyCode as string),
           getPositions()
         ]);
-
-        console.log('API Responses:', {
-          users: usersResponse,
-          departments: departmentsResponse,
-          positions: positionsResponse
-        });
-
-        setUsers(Array.isArray(usersResponse.data) ? usersResponse.data : []);
         setDepartments(Array.isArray(departmentsResponse.data) ? departmentsResponse.data : []);
         setPositions(Array.isArray(positionsResponse.data) ? positionsResponse.data : []);
-
-        console.log('Processed data:', {
-          users: usersResponse.data,
-          departments: departmentsResponse.data,
-          positions: positionsResponse.data
-        });
       } catch (error) {
-        console.error('Error loading initial data:', error);
         setError('데이터를 불러오는데 실패했습니다.');
       }
     };
-
     loadInitialData();
   }, []);
+
+  // 사용자 목록 및 페이징 데이터 로드
+  useEffect(() => {
+    if (!companyCode) return;
+    const fetchPagedUsers = async () => {
+      try {
+        const res = await getMembers(companyCode, currentPage - 1, itemsPerPage);
+        setUsers(Array.isArray(res.data?.content) ? res.data.content : []);
+        setTotalElements(Number.isNaN(Number(res.data?.page?.totalElements)) ? 0 : Number(res.data?.page?.totalElements));
+      } catch (e) {
+        setUsers([]);
+        setTotalElements(0);
+      }
+    };
+    fetchPagedUsers();
+  }, [companyCode, currentPage, itemsPerPage]);
+
+  // 필터/검색 변경 시 페이지 0으로 리셋
+  useEffect(() => { setCurrentPage(1); }, [userDepartmentFilter, userPositionFilter, userSearch]);
 
   // 사용자 추가/수정 모달 열기
   const openUserModal = (user?: Member) => {
@@ -476,6 +609,8 @@ const UserManagementPage: React.FC = () => {
         {/* 사용자 관리 */}
         {activeTab === 'users' && (
           <>
+            {/* 사용자 통계 */}
+            <UserStats users={users} departments={departments} positions={positions} />
             {/* VehicleFilter 스타일의 필터 카드 */}
             <div className="w-full bg-white p-4 rounded-lg shadow-sm mb-6 flex flex-wrap items-end gap-4">
               <div className="flex-1 min-w-[180px]">
@@ -570,6 +705,14 @@ const UserManagementPage: React.FC = () => {
                 </table>
               </div>
             </div>
+            {/* Pagination UI */}
+            <VehiclePagination
+              currentPage={currentPage}
+              totalPages={Math.max(1, Math.ceil(totalElements / itemsPerPage))}
+              setCurrentPage={setCurrentPage}
+              itemsPerPage={itemsPerPage}
+              setItemsPerPage={setItemsPerPage}
+            />
           </>
         )}
 

@@ -26,8 +26,11 @@ export interface MemberUpdateRequest extends Omit<MemberRegisterRequest, 'passwo
   id: number;
 }
 
-export const getMembers = async (companyCode: string) => {
-  const response = await axiosInstance.get(`/api/members?companyCode=${companyCode}`);
+export const getMembers = async (companyCode: string, page?: number, size?: number) => {
+  let url = `/api/members?companyCode=${companyCode}`;
+  if (typeof page === 'number') url += `&page=${page}`;
+  if (typeof size === 'number') url += `&size=${size}`;
+  const response = await axiosInstance.get(url);
   return response.data;
 };
 
