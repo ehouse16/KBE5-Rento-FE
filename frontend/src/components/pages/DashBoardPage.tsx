@@ -41,7 +41,7 @@ interface MonthlyStats {
   nonBusinessRatio: number;
 }
 
-const COLORS = ['#1e90ff', '#00c49f', '#ffbb28', '#ff8042'];
+const COLORS = ['#1e90ff', '#00c49f', '#ffbb28', '#e5e7eb'];
 const toKm = (m: number) => (m / 1000).toLocaleString(undefined, { maximumFractionDigits: 1 });
 
 const DashboardPage: React.FC = () => {
@@ -253,6 +253,7 @@ const DashboardPage: React.FC = () => {
     { name: '출·퇴근', value: latest.commuteRatio || 0 },
     { name: '비업무', value: latest.nonBusinessRatio || 0 },
   ];
+  const donutAllZero = donutData.every(d => d.value === 0);
 
   // 평균 계산 (예시: 30일, 4주)
   const dayAvgCnt = latest.totalDrivingCnt ? (latest.totalDrivingCnt / 30).toFixed(1) : '0.0';
@@ -321,18 +322,30 @@ const DashboardPage: React.FC = () => {
           <div className="flex-1 flex flex-col items-center justify-center min-w-[220px]">
             <div className="flex flex-col items-center">
               <PieChart width={120} height={120}>
-                <Pie data={donutData.slice(0, 3)} dataKey="value" nameKey="name" cx="50%" cy="50%" innerRadius={40} outerRadius={55} startAngle={90} endAngle={-270}>
-                  {donutData.slice(0, 3).map((entry, idx) => (
-                    <Cell key={`cell-${idx}`} fill={COLORS[idx]} />
-                  ))}
+                <Pie
+                  data={donutAllZero ? [{ name: '없음', value: 1 }] : donutData.slice(0, 3)}
+                  dataKey="value"
+                  nameKey="name"
+                  cx="50%"
+                  cy="50%"
+                  innerRadius={40}
+                  outerRadius={55}
+                  startAngle={90}
+                  endAngle={-270}
+                >
+                  {donutAllZero
+                    ? <Cell fill="#e5e7eb" />
+                    : donutData.slice(0, 3).map((entry, idx) => (
+                        <Cell key={`cell-${idx}`} fill={COLORS[idx]} />
+                      ))}
                 </Pie>
               </PieChart>
               <div className="text-gray-500 text-base">운행 비율</div>
             </div>
             <div className="flex flex-col gap-1 mt-4 text-base">
-              <span className="flex items-center"><span className="w-3 h-3 rounded-full mr-1" style={{background: COLORS[0]}}></span>업무용 <span className="ml-1 font-semibold text-[#22c55e]">{donutData[0].value.toFixed(1)}%</span></span>
-              <span className="flex items-center"><span className="w-3 h-3 rounded-full mr-1" style={{background: COLORS[1]}}></span>출·퇴근 <span className="ml-1 font-semibold text-[#00c49f]">{donutData[1].value.toFixed(1)}%</span></span>
-              <span className="flex items-center"><span className="w-3 h-3 rounded-full mr-1" style={{background: COLORS[2]}}></span>비업무 <span className="ml-1 font-semibold text-[#ffbb28]">{donutData[2].value.toFixed(1)}%</span></span>
+              <span className="flex items-center"><span className="w-3 h-3 rounded-full mr-1" style={{background: COLORS[0]}}></span>업무용 <span className="ml-1 font-semibold" style={{color: COLORS[0]}}>{donutData[0].value.toFixed(1)}%</span></span>
+              <span className="flex items-center"><span className="w-3 h-3 rounded-full mr-1" style={{background: COLORS[1]}}></span>출·퇴근 <span className="ml-1 font-semibold" style={{color: COLORS[1]}}>{donutData[1].value.toFixed(1)}%</span></span>
+              <span className="flex items-center"><span className="w-3 h-3 rounded-full mr-1" style={{background: COLORS[2]}}></span>비업무 <span className="ml-1 font-semibold" style={{color: COLORS[2]}}>{donutData[2].value.toFixed(1)}%</span></span>
             </div>
           </div>
         </div>
