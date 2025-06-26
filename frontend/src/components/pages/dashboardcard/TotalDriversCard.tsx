@@ -7,7 +7,7 @@ interface TotalDriversCardProps {
 
 const TotalDriversCard: React.FC<TotalDriversCardProps> = ({ value }) => (
   <StatCardBase
-    title="등록된 운전자"
+    title="전체 운전자"
     value={value}
     icon="fa-users"
     color="bg-purple-500"

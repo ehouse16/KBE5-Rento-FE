@@ -13,14 +13,14 @@ interface StatCardGridProps {
 
 const StatCardGrid: React.FC<StatCardGridProps> = ({
   totalVehicles,
-  activeReservations,
   totalDrivers,
+  activeReservations,
   operationLogs,
 }) => (
   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
     <TotalVehiclesCard value={totalVehicles} />
-    <ActiveReservationsCard value={activeReservations} />
     <TotalDriversCard value={totalDrivers} />
+    <ActiveReservationsCard value={activeReservations} />
     <OperationLogsCard value={operationLogs} />
   </div>
 );

@@ -462,9 +462,8 @@ const UserManagementPage: React.FC = () => {
 
         {/* 사용자 관리 */}
         {activeTab === 'users' && (
-          <div className="bg-white rounded-md shadow-sm p-6">
-            <div className="flex justify-between items-center mb-6">
-              <h2 className="text-lg font-semibold text-gray-800">사용자 관리</h2>
+          <>
+            <div className="flex justify-end items-center mb-2">
               <button
                 className="bg-[#2ECC71] text-white px-4 py-2 rounded-md text-sm font-medium flex items-center cursor-pointer !rounded-button whitespace-nowrap"
                 onClick={() => openUserModal()}
@@ -473,65 +472,61 @@ const UserManagementPage: React.FC = () => {
                 사용자 추가
               </button>
             </div>
-
-            {/* 사용자 테이블 */}
-            <div className="overflow-x-auto">
-              <table className="min-w-full divide-y divide-gray-200">
-                <thead className="bg-gray-50">
-                  <tr>
-                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">이름</th>
-                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">이메일</th>
-                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">직책</th>
-                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">부서</th>
-                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">전화번호</th>
-                    <th scope="col" className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">액션</th>
-                  </tr>
-                </thead>
-                <tbody className="bg-white divide-y divide-gray-200">
-                  {users.map((user, idx) => (
-                    <tr key={user.id ?? user.login_id ?? idx}>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="flex items-center">
-                          <div className="flex-shrink-0 h-10 w-10 bg-gray-200 rounded-full flex items-center justify-center">
-                            <span className="text-gray-600 font-medium">{user.name?.substring(0, 2) || '??'}</span>
-                          </div>
-                          <div className="ml-4">
-                            <div className="text-sm font-medium text-gray-900">{user.name || '이름 없음'}</div>
-                            <div className="text-sm text-gray-500">{user.login_id || 'ID 없음'}</div>
-                          </div>
-                        </div>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{user.email || '-'}</td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{user.position || '-'}</td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{user.departmentName || '-'}</td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{user.phoneNumber || '-'}</td>
-                      <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                        <button
-                          className="text-[#2ECC71] hover:text-[#27ae60] mr-3 cursor-pointer !rounded-button whitespace-nowrap"
-                          onClick={() => openUserModal(user)}
-                        >
-                          <i className="fas fa-edit"></i>
-                        </button>
-                        <button
-                          className="text-red-500 hover:text-red-700 cursor-pointer !rounded-button whitespace-nowrap"
-                          onClick={() => deleteUser(user.id)}
-                        >
-                          <i className="fas fa-trash-alt"></i>
-                        </button>
-                      </td>
+            <div className="bg-white rounded-lg shadow-sm overflow-hidden">
+              <div className="overflow-x-auto">
+                <table className="min-w-full divide-y divide-gray-200">
+                  <thead className="bg-gray-50">
+                    <tr>
+                      <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">이름</th>
+                      <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">이메일</th>
+                      <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">직책</th>
+                      <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">부서</th>
+                      <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">전화번호</th>
+                      <th scope="col" className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">액션</th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
+                  </thead>
+                  <tbody className="bg-white divide-y divide-gray-200">
+                    {users.map((user, idx) => (
+                      <tr key={user.id ?? user.login_id ?? idx} className="hover:bg-gray-50 cursor-pointer">
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <div className="flex items-center">
+                            <div className="ml-4">
+                              <div className="text-sm font-medium text-gray-900">{user.name || '이름 없음'}</div>
+                              <div className="text-sm text-gray-500">{user.login_id || 'ID 없음'}</div>
+                            </div>
+                          </div>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{user.email || '-'}</td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{user.position || '-'}</td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{user.departmentName || '-'}</td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{user.phoneNumber || '-'}</td>
+                        <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                          <button
+                            className="text-green-600 hover:text-green-900 mr-3 cursor-pointer whitespace-nowrap !rounded-button"
+                            onClick={e => { e.stopPropagation(); openUserModal(user); }}
+                          >
+                            <i className="fas fa-edit"></i>
+                          </button>
+                          <button
+                            className="text-red-600 hover:text-red-900 cursor-pointer whitespace-nowrap !rounded-button"
+                            onClick={e => { e.stopPropagation(); deleteUser(user.id); }}
+                          >
+                            <i className="fas fa-trash"></i>
+                          </button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
             </div>
-          </div>
+          </>
         )}
 
         {/* 부서 관리 */}
         {activeTab === 'departments' && (
-          <div className="bg-white rounded-md shadow-sm p-6">
-            <div className="flex justify-between items-center mb-6">
-              <h2 className="text-lg font-semibold text-gray-800">부서 관리</h2>
+          <>
+            <div className="flex justify-end items-center mb-2">
               <button
                 className="bg-[#2ECC71] text-white px-4 py-2 rounded-md text-sm font-medium flex items-center cursor-pointer !rounded-button whitespace-nowrap"
                 onClick={() => openDepartmentModal()}
@@ -540,41 +535,42 @@ const UserManagementPage: React.FC = () => {
                 부서 추가
               </button>
             </div>
-
-            {/* 부서 카드 그리드 */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {departments.map(department => (
-                <div key={department.departmentId} className="bg-white border border-gray-200 rounded-lg p-5 shadow-sm hover:shadow-md transition-shadow">
-                  <div className="flex justify-between items-start mb-4">
-                    <div className="flex items-center">
-                      <div className="p-2 rounded-md bg-[#ebfaf0] text-[#2ECC71] mr-3">
-                        <i className="fas fa-building"></i>
-                      </div>
-                      <h3 className="text-lg font-medium text-gray-800">{department.departmentName}</h3>
-                    </div>
-                    <div className="flex">
-                      <button
-                        className="text-[#2ECC71] hover:text-[#27ae60] mr-2 cursor-pointer !rounded-button whitespace-nowrap"
-                        onClick={() => openDepartmentModal(department)}
-                      >
-                        <i className="fas fa-edit"></i>
-                      </button>
-                      <button
-                        className="text-red-500 hover:text-red-700 cursor-pointer !rounded-button whitespace-nowrap"
-                        onClick={() => handleDeleteDepartment(department.departmentId)}
-                      >
-                        <i className="fas fa-trash-alt"></i>
-                      </button>
-                    </div>
-                  </div>
-                  <div className="flex items-center text-sm text-gray-500">
-                    <i className="fas fa-users mr-2"></i>
-                    <span>구성원 {department.numberOfEmployees}명</span>
-                  </div>
-                </div>
-              ))}
+            <div className="bg-white rounded-lg shadow-sm overflow-hidden">
+              <div className="overflow-x-auto">
+                <table className="min-w-full divide-y divide-gray-200">
+                  <thead className="bg-gray-50">
+                    <tr>
+                      <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">부서명</th>
+                      <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">구성원수</th>
+                      <th scope="col" className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">액션</th>
+                    </tr>
+                  </thead>
+                  <tbody className="bg-white divide-y divide-gray-200">
+                    {departments.map(department => (
+                      <tr key={department.departmentId} className="hover:bg-gray-50 cursor-pointer">
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{department.departmentName}</td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{department.numberOfEmployees}명</td>
+                        <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                          <button
+                            className="text-green-600 hover:text-green-900 mr-3 cursor-pointer whitespace-nowrap !rounded-button"
+                            onClick={e => { e.stopPropagation(); openDepartmentModal(department); }}
+                          >
+                            <i className="fas fa-edit"></i>
+                          </button>
+                          <button
+                            className="text-red-600 hover:text-red-900 cursor-pointer whitespace-nowrap !rounded-button"
+                            onClick={e => { e.stopPropagation(); handleDeleteDepartment(department.departmentId); }}
+                          >
+                            <i className="fas fa-trash"></i>
+                          </button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
             </div>
-          </div>
+          </>
         )}
       </main>
 
