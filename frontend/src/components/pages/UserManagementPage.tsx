@@ -46,6 +46,11 @@ const UserManagementPage: React.FC = () => {
   const [isIdChecked, setIsIdChecked] = useState(false);
   const [isEmailChecked, setIsEmailChecked] = useState(false);
   const [isPhoneChecked, setIsPhoneChecked] = useState(false);
+  // Add filter state
+  const [userDepartmentFilter, setUserDepartmentFilter] = useState<string>('전체');
+  const [userPositionFilter, setUserPositionFilter] = useState<string>('전체');
+  // Add search state
+  const [userSearch, setUserSearch] = useState<string>('');
 
   // 초기 데이터 로드
   useEffect(() => {
@@ -429,18 +434,6 @@ const UserManagementPage: React.FC = () => {
 
       {/* 메인 콘텐츠 */}
       <main className="flex-1 p-6">
-        {/* 경로 표시 */}
-        <div className="flex items-center text-sm text-gray-500 mb-2">
-          <span>관리</span>
-          <i className="fas fa-chevron-right mx-2 text-xs"></i>
-          <span className="text-[#2ECC71]">사용자 & 부서</span>
-        </div>
-
-        {/* 페이지 헤더 */}
-        <div className="mb-6">
-          <h1 className="text-2xl font-bold text-gray-800">사용자 & 부서</h1>
-          <p className="text-gray-600 mt-1">회사 사용자, 역할, 권한 및 부서 구조 관리</p>
-        </div>
         {/* 추가 버튼: 탭 위, 오른쪽 정렬 */}
         <div className="flex justify-end mb-2">
           {activeTab === 'users' && (
@@ -482,49 +475,102 @@ const UserManagementPage: React.FC = () => {
 
         {/* 사용자 관리 */}
         {activeTab === 'users' && (
-          <div className="bg-white rounded-lg shadow-sm overflow-hidden">
-            <div className="overflow-x-auto">
-              <table className="min-w-full divide-y divide-gray-200">
-                <thead className="bg-gray-50">
-                  <tr>
-                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">이름</th>
-                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">아이디</th>
-                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">이메일</th>
-                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">직책</th>
-                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">부서</th>
-                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">전화번호</th>
-                    <th scope="col" className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">액션</th>
-                  </tr>
-                </thead>
-                <tbody className="bg-white divide-y divide-gray-200">
-                  {users.map((user, idx) => (
-                    <tr key={user.id ?? user.login_id ?? idx} className="hover:bg-gray-50 cursor-pointer">
-                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{user.name || '이름 없음'}</td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{user.login_id || '-'}</td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{user.email || '-'}</td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{user.position || '-'}</td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{user.departmentName || '-'}</td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{user.phoneNumber || '-'}</td>
-                      <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                        <button
-                          className="text-green-600 hover:text-green-900 mr-3 cursor-pointer whitespace-nowrap !rounded-button"
-                          onClick={e => { e.stopPropagation(); openUserModal(user); }}
-                        >
-                          <i className="fas fa-edit"></i>
-                        </button>
-                        <button
-                          className="text-red-600 hover:text-red-900 cursor-pointer whitespace-nowrap !rounded-button"
-                          onClick={e => { e.stopPropagation(); deleteUser(user.id); }}
-                        >
-                          <i className="fas fa-trash"></i>
-                        </button>
-                      </td>
-                    </tr>
+          <>
+            {/* VehicleFilter 스타일의 필터 카드 */}
+            <div className="w-full bg-white p-4 rounded-lg shadow-sm mb-6 flex flex-wrap items-end gap-4">
+              <div className="flex-1 min-w-[180px]">
+                <label className="block text-sm font-medium text-gray-700 mb-1">부서별 필터</label>
+                <select
+                  className="block w-full h-12 pl-3 pr-10 border-gray-300 focus:outline-none focus:ring-green-500 focus:border-green-500 text-base rounded-md"
+                  value={userDepartmentFilter}
+                  onChange={e => setUserDepartmentFilter(e.target.value)}
+                >
+                  <option value="전체">전체 부서</option>
+                  {departments.map(dept => (
+                    <option key={dept.departmentId} value={dept.departmentName}>{dept.departmentName}</option>
                   ))}
-                </tbody>
-              </table>
+                </select>
+              </div>
+              <div className="flex-1 min-w-[180px]">
+                <label className="block text-sm font-medium text-gray-700 mb-1">직책별 필터</label>
+                <select
+                  className="block w-full h-12 pl-3 pr-10 border-gray-300 focus:outline-none focus:ring-green-500 focus:border-green-500 text-base rounded-md"
+                  value={userPositionFilter}
+                  onChange={e => setUserPositionFilter(e.target.value)}
+                >
+                  <option value="전체">전체 직책</option>
+                  {positions.map(pos => (
+                    <option key={pos} value={pos}>{pos}</option>
+                  ))}
+                </select>
+              </div>
+              <div className="relative flex-1 min-w-[220px]">
+                <label className="block text-sm font-medium text-gray-700 mb-1">검색</label>
+                <input
+                  type="text"
+                  className="block w-full h-12 pl-10 pr-3 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-green-500 focus:border-green-500 text-base"
+                  placeholder="이름, 아이디, 이메일 검색"
+                  value={userSearch}
+                  onChange={e => setUserSearch(e.target.value)}
+                />
+                <div className="absolute left-0 top-12 -translate-y-1/2 pl-3 flex items-center pointer-events-none">
+                  <i className="fas fa-search text-gray-400 text-lg"></i>
+                </div>
+              </div>
             </div>
-          </div>
+            <div className="bg-white rounded-lg shadow-sm overflow-hidden">
+              <div className="overflow-x-auto">
+                <table className="min-w-full divide-y divide-gray-200">
+                  <thead className="bg-gray-50">
+                    <tr>
+                      <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">이름</th>
+                      <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">아이디</th>
+                      <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">이메일</th>
+                      <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">직책</th>
+                      <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">부서</th>
+                      <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">전화번호</th>
+                      <th scope="col" className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">액션</th>
+                    </tr>
+                  </thead>
+                  <tbody className="bg-white divide-y divide-gray-200">
+                    {users
+                      .filter(user => userDepartmentFilter === '전체' || user.departmentName === userDepartmentFilter)
+                      .filter(user => userPositionFilter === '전체' || user.position === userPositionFilter)
+                      .filter(user =>
+                        userSearch.trim() === '' ||
+                        user.name?.toLowerCase().includes(userSearch.toLowerCase()) ||
+                        user.login_id?.toLowerCase().includes(userSearch.toLowerCase()) ||
+                        user.email?.toLowerCase().includes(userSearch.toLowerCase())
+                      )
+                      .map((user, idx) => (
+                        <tr key={user.id ?? user.login_id ?? idx} className="hover:bg-gray-50 cursor-pointer">
+                          <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{user.name || '이름 없음'}</td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{user.login_id || '-'}</td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{user.email || '-'}</td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{user.position || '-'}</td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{user.departmentName || '-'}</td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{user.phoneNumber || '-'}</td>
+                          <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                            <button
+                              className="text-green-600 hover:text-green-900 mr-3 cursor-pointer whitespace-nowrap !rounded-button"
+                              onClick={e => { e.stopPropagation(); openUserModal(user); }}
+                            >
+                              <i className="fas fa-edit"></i>
+                            </button>
+                            <button
+                              className="text-red-600 hover:text-red-900 cursor-pointer whitespace-nowrap !rounded-button"
+                              onClick={e => { e.stopPropagation(); deleteUser(user.id); }}
+                            >
+                              <i className="fas fa-trash"></i>
+                            </button>
+                          </td>
+                        </tr>
+                      ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </>
         )}
 
         {/* 부서 관리 */}
