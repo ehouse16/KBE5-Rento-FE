@@ -488,6 +488,7 @@ const UserManagementPage: React.FC = () => {
                 <thead className="bg-gray-50">
                   <tr>
                     <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">이름</th>
+                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">아이디</th>
                     <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">이메일</th>
                     <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">직책</th>
                     <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">부서</th>
@@ -498,14 +499,8 @@ const UserManagementPage: React.FC = () => {
                 <tbody className="bg-white divide-y divide-gray-200">
                   {users.map((user, idx) => (
                     <tr key={user.id ?? user.login_id ?? idx} className="hover:bg-gray-50 cursor-pointer">
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="flex items-center">
-                          <div className="ml-4">
-                            <div className="text-sm font-medium text-gray-900">{user.name || '이름 없음'}</div>
-                            <div className="text-sm text-gray-500">{user.login_id || 'ID 없음'}</div>
-                          </div>
-                        </div>
-                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{user.name || '이름 없음'}</td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{user.login_id || '-'}</td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{user.email || '-'}</td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{user.position || '-'}</td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{user.departmentName || '-'}</td>
