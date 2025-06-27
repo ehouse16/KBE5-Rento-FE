@@ -111,7 +111,7 @@ const DashboardPage: React.FC = () => {
     const fetchDriverCount = async () => {
       try {
         const res = await axiosInstance.get(`/api/members?companyCode=${companyCode}`);
-        const driverList = Array.isArray(res.data.data) ? res.data.data : [];
+        const driverList = Array.isArray(res.data.data?.content) ? res.data.data.content : [];
         setStats(prev => ({
           ...prev,
           totalDrivers: driverList.length,
@@ -350,7 +350,6 @@ const DashboardPage: React.FC = () => {
           </div>
         </div>
       </div>
-
 
         {/* 월별 stacked bar chart (1~12월 전체) */}
         <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 mt-6">
