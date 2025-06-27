@@ -67,7 +67,7 @@ const DriveRegisterModal: React.FC<DriveRegisterModalProps> = ({ open, onClose, 
         return;
       }
       axiosInstance.get(`/api/members?companyCode=${companyCode}`)
-        .then(res => setMembers(res.data.data || []));
+        .then(res => setMembers(res.data.data?.content || []));
       axiosInstance.get("/api/vehicles?onlyFree=true")
         .then(res => {
           setVehicles(res.data.data?.content || []);

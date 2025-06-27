@@ -57,7 +57,7 @@ const Header = () => {
   
 
   const handleTitleClick = () => {
-    navigate("/");
+    navigate("/dashboard");
   };
 
   return (
