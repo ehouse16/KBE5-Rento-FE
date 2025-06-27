@@ -10,7 +10,7 @@ interface Vehicle {
   modelName: string;
   totalDistanceKm?: number;
   batteryVoltage?: string;
-  status: 'available' | 'in-use';
+  status: 'available' | 'in-use' | 'READY' | 'RESERVATION';
 }
 
 interface SortConfig {
@@ -119,7 +119,11 @@ const VehicleTable: React.FC<VehicleTableProps> = ({ vehicles, sortConfig, setSo
                     <div className="text-sm text-gray-900">{vehicle.totalDistanceKm?.toLocaleString?.() ?? '-'}</div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
-                    <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">사용 가능</span>
+                    {vehicle.status === 'READY' ? (
+                      <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">사용 가능</span>
+                    ) : (
+                      <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-red-100 text-red-800">사용 불가</span>
+                    )}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                     <button 

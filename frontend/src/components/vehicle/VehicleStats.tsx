@@ -5,7 +5,7 @@ interface Vehicle {
   brand: string;
   modelName: string;
   totalDistanceKm?: number;
-  status: 'available' | 'in-use';
+  status: 'available' | 'in-use' | 'READY' | 'RESERVATION';
 }
 
 interface VehicleStatsProps {
@@ -14,8 +14,8 @@ interface VehicleStatsProps {
 
 const VehicleStats: React.FC<VehicleStatsProps> = ({ vehicles }) => {
   const total = vehicles.length;
-  const available = vehicles.filter((v: Vehicle) => v.status === 'available').length;
-  const inUse = vehicles.filter((v: Vehicle) => v.status === 'in-use').length;
+  const available = vehicles.filter((v: Vehicle) => v.status === 'READY').length;
+  const inUse = vehicles.filter((v: Vehicle) => v.status === 'RESERVATION').length;
   return (
     <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
       <div className="bg-white p-5 rounded-lg shadow-sm border border-gray-100">
@@ -29,8 +29,7 @@ const VehicleStats: React.FC<VehicleStatsProps> = ({ vehicles }) => {
           </div>
         </div>
         <div className="mt-4 text-sm text-green-500">
-          <i className="fas fa-arrow-up mr-1"></i>
-          <span>지난 달 대비 2대 증가</span>
+          {/* 증가/감소 등 통계 문구 삭제 */}
         </div>
       </div>
       <div className="bg-white p-5 rounded-lg shadow-sm border border-gray-100">

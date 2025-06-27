@@ -23,6 +23,7 @@ const RealTimeEventPage: React.FC = () => {
   const [trackingStatus, setTrackingStatus] = useState('서버에 연결 중...');
   const eventQueueRef = useRef<any[]>([]); // 이벤트 큐
   const API_BASE_URL = process.env.REACT_APP_API_BASE_URL;
+  const [vehicleSearch, setVehicleSearch] = useState('');
 
   useEffect(() => {
     const token = localStorage.getItem('accessToken');
@@ -35,11 +36,18 @@ const RealTimeEventPage: React.FC = () => {
     setTrackingStatus('SSE 구독 요청 중...');
     const eventSource = new EventSource(`${API_BASE_URL}/api/stream/subscribe?token=${token}`);
 
+    // 연결 성공 시 상태 변경 (EventSourcePolyfill은 onopen 지원)
+    eventSource.onopen = () => {
+      setTrackingStatus('SSE 구독 성공');
+    };
+
     eventSource.addEventListener('cycle-info', (event) => {
       const messageEvent = event as MessageEvent<any>;
       if (!messageEvent.data) return;
       try {
         const data = JSON.parse(messageEvent.data);
+        // 최초 데이터 수신 시 상태 변경 (onopen이 안 먹히는 환경 대비)
+        setTrackingStatus('SSE 구독 성공');
         // 큐에 추가
         eventQueueRef.current.push(data);
       } catch (e) {}
@@ -99,6 +107,21 @@ const RealTimeEventPage: React.FC = () => {
   // 전체 경로 포인트 개수
   const totalPoints = Object.values(vehiclePaths).reduce((acc, arr) => acc + arr.length, 0);
 
+  // 필터링된 차량만 지도에 표시
+  const filteredVehiclePaths = vehicleSearch.trim()
+    ? Object.fromEntries(Object.entries(vehiclePaths).filter(([id]) => id.includes(vehicleSearch.trim())))
+    : vehiclePaths;
+  const filteredVehicleMarkers = vehicleSearch.trim()
+    ? Object.fromEntries(Object.entries(vehicleMarkers).filter(([id]) => id.includes(vehicleSearch.trim())))
+    : vehicleMarkers;
+
+  // 차량번호 검색 input에서 엔터 시 검색
+  const handleVehicleSearchKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter') {
+      setVehicleSearch((prev) => prev); // 엔터 시에도 현재 값으로 필터링(실시간 반영이지만 UX 통일)
+    }
+  };
+
   return (
     <div>
       <h1 className="text-2xl font-bold mb-4">실시간 관제</h1>
@@ -122,8 +145,18 @@ const RealTimeEventPage: React.FC = () => {
             </span>
           </div>
         </div>
+        <div className="mt-4">
+          <input
+            type="text"
+            placeholder="차량번호 검색"
+            value={vehicleSearch}
+            onChange={e => setVehicleSearch(e.target.value)}
+            onKeyDown={handleVehicleSearchKeyDown}
+            className="border rounded px-2 py-1 w-60"
+          />
+        </div>
       </div>
-      <KakaoMap vehiclePaths={vehiclePaths} vehicleMarkers={vehicleMarkers} />
+      <KakaoMap vehiclePaths={filteredVehiclePaths} vehicleMarkers={filteredVehicleMarkers} />
     </div>
   );
 };

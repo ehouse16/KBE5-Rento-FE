@@ -51,6 +51,7 @@
   "devDependencies": {
     "@craco/craco": "^7.1.0",
     "@types/event-source-polyfill": "^1.0.5",
+    "@types/recharts": "^1.8.29",
     "autoprefixer": "^10.4.17",
     "postcss": "^8.4.35"
   },
