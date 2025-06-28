@@ -26,10 +26,21 @@ export interface MemberUpdateRequest extends Omit<MemberRegisterRequest, 'passwo
   id: number;
 }
 
-export const getMembers = async (companyCode: string, page?: number, size?: number) => {
-  let url = `/api/members?companyCode=${companyCode}`;
-  if (typeof page === 'number') url += `&page=${page}`;
-  if (typeof size === 'number') url += `&size=${size}`;
+export const getMembers = async ({ position, departmentId, keyword, page, size }: {
+  position?: string;
+  departmentId?: number;
+  keyword?: string;
+  page?: number;
+  size?: number;
+} = {}) => {
+  let url = `/api/members?`;
+  const params = [];
+  if (position) params.push(`position=${encodeURIComponent(position)}`);
+  if (departmentId) params.push(`departmentId=${departmentId}`);
+  if (keyword) params.push(`keyword=${encodeURIComponent(keyword)}`);
+  if (typeof page === 'number') params.push(`page=${page}`);
+  if (typeof size === 'number') params.push(`size=${size}`);
+  if (params.length > 0) url += params.join('&');
   const response = await axiosInstance.get(url);
   return response.data;
 };

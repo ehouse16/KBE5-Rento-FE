@@ -184,6 +184,8 @@ const UserManagementPage: React.FC = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(5);
   const [totalElements, setTotalElements] = useState(0);
+  // Add state for all users
+  const [allUsers, setAllUsers] = useState<Member[]>([]);
 
   // 초기 데이터 로드
   useEffect(() => {
@@ -208,12 +210,34 @@ const UserManagementPage: React.FC = () => {
     loadInitialData();
   }, []);
 
+  // Fetch all users (no filters) once on mount or when companyCode changes
+  useEffect(() => {
+    if (!companyCode) return;
+    const fetchAllUsers = async () => {
+      try {
+        const res = await getMembers({ page: 0, size: 10000 }); // large size to get all
+        setAllUsers(Array.isArray(res.data?.content) ? res.data.content : []);
+      } catch {
+        setAllUsers([]);
+      }
+    };
+    fetchAllUsers();
+  }, [companyCode]);
+
   // 사용자 목록 및 페이징 데이터 로드
   useEffect(() => {
     if (!companyCode) return;
     const fetchPagedUsers = async () => {
       try {
-        const res = await getMembers(companyCode, currentPage - 1, itemsPerPage);
+        const res = await getMembers({
+          position: userPositionFilter !== '전체' ? userPositionFilter : undefined,
+          departmentId: userDepartmentFilter !== '전체' && departments.length > 0
+            ? departments.find(d => d.departmentName === userDepartmentFilter)?.departmentId
+            : undefined,
+          keyword: userSearch || undefined,
+          page: currentPage - 1,
+          size: itemsPerPage
+        });
         setUsers(Array.isArray(res.data?.content) ? res.data.content : []);
         setTotalElements(Number.isNaN(Number(res.data?.page?.totalElements)) ? 0 : Number(res.data?.page?.totalElements));
       } catch (e) {
@@ -222,7 +246,7 @@ const UserManagementPage: React.FC = () => {
       }
     };
     fetchPagedUsers();
-  }, [companyCode, currentPage, itemsPerPage]);
+  }, [companyCode, currentPage, itemsPerPage, userDepartmentFilter, userPositionFilter, userSearch, departments]);
 
   // 필터/검색 변경 시 페이지 0으로 리셋
   useEffect(() => { setCurrentPage(1); }, [userDepartmentFilter, userPositionFilter, userSearch]);
@@ -457,16 +481,16 @@ const UserManagementPage: React.FC = () => {
           companyCode: companyCode
         };
         await updateMember(editingUser.id, updateRequest);
-        const updatedUsers = await getMembers(companyCode);
-        setUsers(updatedUsers.data || []);
+        const updatedUsers = await getMembers();
+        setUsers(updatedUsers.data?.content || []);
       } else {
         const registerRequest: MemberRegisterRequest = {
           ...userForm,
           companyCode: companyCode
         };
         await registerMember(registerRequest);
-        const updatedUsers = await getMembers(companyCode);
-        setUsers(updatedUsers.data || []);
+        const updatedUsers = await getMembers();
+        setUsers(updatedUsers.data?.content || []);
       }
       setShowUserModal(false);
       setError(null);
@@ -610,10 +634,10 @@ const UserManagementPage: React.FC = () => {
         {activeTab === 'users' && (
           <>
             {/* 사용자 통계 */}
-            <UserStats users={users} departments={departments} positions={positions} />
+            <UserStats users={allUsers} departments={departments} positions={positions} />
             {/* VehicleFilter 스타일의 필터 카드 */}
-            <div className="w-full bg-white p-4 rounded-lg shadow-sm mb-6 flex flex-wrap items-end gap-4">
-              <div className="flex-1 min-w-[180px]">
+            <div className="w-full bg-white p-4 rounded-lg shadow-sm mb-6 flex flex-col md:flex-row flex-wrap md:items-end gap-4">
+              <div className="flex-1 min-w-[180px] w-full md:w-auto">
                 <label className="block text-sm font-medium text-gray-700 mb-1">부서별 필터</label>
                 <select
                   className="block w-full h-12 pl-3 pr-10 border-gray-300 focus:outline-none focus:ring-green-500 focus:border-green-500 text-base rounded-md"
@@ -626,7 +650,7 @@ const UserManagementPage: React.FC = () => {
                   ))}
                 </select>
               </div>
-              <div className="flex-1 min-w-[180px]">
+              <div className="flex-1 min-w-[180px] w-full md:w-auto">
                 <label className="block text-sm font-medium text-gray-700 mb-1">직책별 필터</label>
                 <select
                   className="block w-full h-12 pl-3 pr-10 border-gray-300 focus:outline-none focus:ring-green-500 focus:border-green-500 text-base rounded-md"
@@ -639,7 +663,7 @@ const UserManagementPage: React.FC = () => {
                   ))}
                 </select>
               </div>
-              <div className="relative flex-1 min-w-[220px]">
+              <div className="relative flex-1 min-w-[220px] w-full md:w-auto">
                 <label className="block text-sm font-medium text-gray-700 mb-1">검색</label>
                 <input
                   type="text"
@@ -653,7 +677,7 @@ const UserManagementPage: React.FC = () => {
                 </div>
               </div>
             </div>
-            <div className="bg-white rounded-lg shadow-sm overflow-hidden">
+            <div className="bg-white rounded-lg shadow-sm overflow-x-auto">
               <div className="overflow-x-auto">
                 <table className="min-w-full divide-y divide-gray-200">
                   <thead className="bg-gray-50">
@@ -706,13 +730,15 @@ const UserManagementPage: React.FC = () => {
               </div>
             </div>
             {/* Pagination UI */}
-            <VehiclePagination
-              currentPage={currentPage}
-              totalPages={Math.max(1, Math.ceil(totalElements / itemsPerPage))}
-              setCurrentPage={setCurrentPage}
-              itemsPerPage={itemsPerPage}
-              setItemsPerPage={setItemsPerPage}
-            />
+            <div className="mt-4 md:mt-0">
+              <VehiclePagination
+                currentPage={currentPage}
+                totalPages={Math.max(1, Math.ceil(totalElements / itemsPerPage))}
+                setCurrentPage={setCurrentPage}
+                itemsPerPage={itemsPerPage}
+                setItemsPerPage={setItemsPerPage}
+              />
+            </div>
           </>
         )}
 
@@ -941,7 +967,7 @@ const UserManagementPage: React.FC = () => {
             <div className="p-6 border-b">
               <h2 className="text-xl font-semibold text-gray-800">
                 {editingDepartment ? '부서 수정' : '부서 추가'}
-              </h2>
+                </h2>
             </div>
             <div className="p-6">
               <div className="mb-4">
