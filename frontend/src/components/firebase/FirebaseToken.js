@@ -3,8 +3,8 @@ import React, { useEffect } from 'react';
 import { messaging, getToken } from '../../firebase-messaging';
 
 export const removeFcmToken = () => {
-    localStorage.removeItem('fcmToken');
-    localStorage.removeItem('fcmTokenChanged');
+    sessionStorage.removeItem('fcmToken');
+    sessionStorage.removeItem('fcmTokenChanged');
 };
 
 const FirebaseToken = () => {
@@ -22,10 +22,10 @@ const FirebaseToken = () => {
                     });
                     if (currentToken) {
                         // 기존 토큰과 비교
-                        const existingToken = localStorage.getItem('fcmToken');
+                        const existingToken = sessionStorage.getItem('fcmToken');
                         if (existingToken !== currentToken) {
-                            localStorage.setItem('fcmToken', currentToken);
-                            localStorage.setItem('fcmTokenChanged', 'true');
+                            sessionStorage.setItem('fcmToken', currentToken);
+                            sessionStorage.setItem('fcmTokenChanged', 'true');
                             window.dispatchEvent(new CustomEvent('fcmTokenUpdated', { detail: { token: currentToken } }));
                             console.log('[FCM] FCM Token generated/refreshed:', currentToken);
                         }
@@ -58,7 +58,7 @@ const FirebaseToken = () => {
         requestPermission();
         
         const handleFocus = () => {
-            const currentToken = localStorage.getItem('fcmToken');
+            const currentToken = sessionStorage.getItem('fcmToken');
             if (!currentToken) {
                 requestPermission();
             }
@@ -66,7 +66,7 @@ const FirebaseToken = () => {
         
         const handleVisibilityChange = () => {
             if (!document.hidden) {
-                const currentToken = localStorage.getItem('fcmToken');
+                const currentToken = sessionStorage.getItem('fcmToken');
                 if (!currentToken) {
                     requestPermission();
                 }

@@ -30,11 +30,6 @@ axiosInstance.interceptors.request.use(
     const accessToken = localStorage.getItem('accessToken');
     const refreshToken = localStorage.getItem('refreshToken');
 
-    console.log('Request interceptor - Tokens:', { accessToken, refreshToken });
-    console.log('Request URL:', config.url);
-    console.log('Request method:', config.method);
-    console.log('Request data:', config.data);
-
     if (accessToken) {
       config.headers['AccessToken'] = accessToken;
     }

@@ -33,7 +33,7 @@ const ManagerLoginPage: React.FC = () => {
   // FCM 토큰을 서버에 전송하는 함수
   const sendFcmToken = async () => {
     try {
-      const fcmToken = localStorage.getItem('fcmToken');
+      const fcmToken = sessionStorage.getItem('fcmToken');
       if (fcmToken) {
         await axiosInstance.patch('/api/managers/fcm-token', {
           token: fcmToken
