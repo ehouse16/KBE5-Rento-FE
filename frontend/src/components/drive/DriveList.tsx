@@ -11,6 +11,7 @@ interface Drive {
   startLocation: string;
   endLocation: string;
   isStart: boolean;
+  status?: "READY" | "DRIVING" | "COMPLETED";
 }
 
 interface DriveListProps {
@@ -34,6 +35,32 @@ const formatTime = (dateString: string) => {
   const hours = String(date.getHours()).padStart(2, "0");
   const minutes = String(date.getMinutes()).padStart(2, "0");
   return `${hours}:${minutes}`;
+};
+
+const getStatusLabel = (status?: string) => {
+  switch (status) {
+    case "READY":
+      return "운행 전";
+    case "DRIVING":
+      return "운행 중";
+    case "COMPLETED":
+      return "운행 완료";
+    default:
+      return "알 수 없음";
+  }
+};
+
+const getStatusClass = (status?: string) => {
+  switch (status) {
+    case "READY":
+      return "bg-blue-100 text-blue-800"; // 운행 전: 파란색
+    case "DRIVING":
+      return "bg-green-100 text-green-800"; // 운행 중: 초록색
+    case "COMPLETED":
+      return "bg-red-100 text-red-800"; // 운행 완료: 빨간색
+    default:
+      return "bg-gray-100 text-gray-800";
+  }
 };
 
 const DriveList: React.FC<DriveListProps> = ({ drives }) => {
@@ -62,9 +89,9 @@ const DriveList: React.FC<DriveListProps> = ({ drives }) => {
                 </p>
               </div>
               <div
-                className={`px-3 py-1 rounded-full text-sm font-medium ${drive.isStart ? "bg-green-100 text-green-800" : "bg-blue-100 text-blue-800"}`}
+                className={`px-3 py-1 rounded-full text-sm font-medium ${getStatusClass(drive.status)}`}
               >
-                {drive.isStart ? "운행 중" : "예약됨"}
+                {getStatusLabel(drive.status)}
               </div>
             </div>
 

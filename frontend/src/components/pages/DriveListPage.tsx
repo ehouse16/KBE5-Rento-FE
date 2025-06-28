@@ -16,6 +16,7 @@ interface Drive {
   startLocation: string;
   endLocation: string;
   isStart: boolean;
+  status?: "READY" | "DRIVING" | "COMPLETED";
 }
 
 const DriveListPage: React.FC = () => {
@@ -27,6 +28,7 @@ const DriveListPage: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [totalElements, setTotalElements] = useState(0);
+  const [statusTab, setStatusTab] = useState<'COMPLETED' | 'DRIVING' | 'READY'>('COMPLETED');
 
   useEffect(() => {
     const fetchDrives = async () => {
@@ -45,6 +47,7 @@ const DriveListPage: React.FC = () => {
             startLocation: d.startLocation || "알 수 없음",
             endLocation: d.endLocation || "알 수 없음",
             isStart: d.isStart,
+            status: d.status as "READY" | "DRIVING" | "COMPLETED" | undefined,
           }))
         );
         setTotalElements(Number.isNaN(Number(data.data?.totalElements)) ? 0 : Number(data.data?.totalElements));
@@ -55,6 +58,22 @@ const DriveListPage: React.FC = () => {
     };
     fetchDrives();
   }, []);
+
+  const getStatusLabel = (status: 'COMPLETED' | 'DRIVING' | 'READY') => {
+    switch (status) {
+      case 'COMPLETED': return '운행 완료';
+      case 'DRIVING': return '운행 중';
+      case 'READY': return '운행 전';
+      default: return '';
+    }
+  };
+
+  const filteredDrivesByStatus = drives.filter((d: any) => {
+    if (statusTab === 'COMPLETED') return d.status === 'COMPLETED';
+    if (statusTab === 'DRIVING') return d.status === 'DRIVING';
+    if (statusTab === 'READY') return d.status === 'READY';
+    return true;
+  });
 
   const filteredDrives = drives
     .filter((d) =>
@@ -93,6 +112,7 @@ const DriveListPage: React.FC = () => {
             startLocation: d.startLocation || "알 수 없음",
             endLocation: d.endLocation || "알 수 없음",
             isStart: d.isStart,
+            status: d.status as "READY" | "DRIVING" | "COMPLETED" | undefined,
           }))
         );
         setTotalElements(Number.isNaN(Number(data.data?.totalElements)) ? 0 : Number(data.data?.totalElements));
@@ -139,6 +159,18 @@ const DriveListPage: React.FC = () => {
               </button>
             </div>
 
+            <div className="flex gap-2 mb-6">
+              {(['COMPLETED', 'DRIVING', 'READY'] as const).map(tab => (
+                <button
+                  key={tab}
+                  className={`px-4 py-2 rounded-full font-semibold text-sm ${statusTab === tab ? 'bg-green-500 text-white' : 'bg-gray-200 text-gray-700'}`}
+                  onClick={() => setStatusTab(tab)}
+                >
+                  {getStatusLabel(tab)}
+                </button>
+              ))}
+            </div>
+
             <div className="bg-white rounded-lg shadow-sm mb-6 p-4 border border-gray-100">
               <div className="flex flex-wrap items-center gap-4">
                 <div className="relative flex-grow max-w-xs">
@@ -153,40 +185,10 @@ const DriveListPage: React.FC = () => {
                     <i className="fas fa-search text-gray-400"></i>
                   </div>
                 </div>
-
-                <div className="relative">
-                  <select
-                    className="appearance-none bg-white border border-gray-200 rounded-lg px-4 py-2 pr-8 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent text-sm cursor-pointer"
-                    value={status}
-                    onChange={(e) => setStatus(e.target.value)}
-                  >
-                    <option>전체 상태</option>
-                    <option>운행 중</option>
-                    <option>예약됨</option>
-                  </select>
-                  <div className="absolute inset-y-0 right-0 flex items-center px-2 pointer-events-none">
-                    <i className="fas fa-chevron-down text-gray-400 text-xs"></i>
-                  </div>
-                </div>
-
-                <div className="relative">
-                  <select
-                    className="appearance-none bg-white border border-gray-200 rounded-lg px-4 py-2 pr-8 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent text-sm cursor-pointer"
-                    value={sort}
-                    onChange={(e) => setSort(e.target.value)}
-                  >
-                    <option>날짜순</option>
-                    <option>이름순</option>
-                    <option>차량번호순</option>
-                  </select>
-                  <div className="absolute inset-y-0 right-0 flex items-center px-2 pointer-events-none">
-                    <i className="fas fa-chevron-down text-gray-400 text-xs"></i>
-                  </div>
-                </div>
               </div>
             </div>
 
-            <DriveList drives={filteredDrives} />
+            <DriveList drives={filteredDrivesByStatus} />
 
             <div className="mt-8 flex justify-center">
               <nav className="flex items-center">

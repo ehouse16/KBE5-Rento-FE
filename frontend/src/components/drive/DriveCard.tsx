@@ -24,6 +24,20 @@ const formatTime = (dateString: string) => {
   return `${hours}:${minutes}`;
 };
 
+// 상태값 한글 변환 함수
+const getDriveStatusLabel = (status?: string) => {
+  switch (status) {
+    case "READY":
+      return "예약 완료";
+    case "DRIVING":
+      return "운행 중";
+    case "COMPLETED":
+      return "운행 완료";
+    default:
+      return "알 수 없음";
+  }
+};
+
 const DriveCard: React.FC<Props> = ({ drive }) => (
   <div className="bg-white rounded-lg shadow-sm hover:shadow-md transition-all duration-200 border border-gray-100 overflow-hidden cursor-pointer">
     <div className="p-5">
@@ -33,9 +47,15 @@ const DriveCard: React.FC<Props> = ({ drive }) => (
           <p className="text-gray-600 text-sm">{drive.vehicle.vehicleNumber}</p>
         </div>
         <div
-          className={`px-3 py-1 rounded-full text-sm font-medium ${drive.isStart ? "bg-green-100 text-green-800" : "bg-blue-100 text-blue-800"}`}
+          className={`px-3 py-1 rounded-full text-sm font-medium ${
+            drive.status === "DRIVING"
+              ? "bg-green-100 text-green-800"
+              : drive.status === "READY"
+              ? "bg-blue-100 text-blue-800"
+              : "bg-gray-100 text-gray-800"
+          }`}
         >
-          {drive.isStart ? "운행 중" : "예약됨"}
+          {getDriveStatusLabel(drive.status)}
         </div>
       </div>
       <div className="space-y-3">

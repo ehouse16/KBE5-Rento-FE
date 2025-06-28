@@ -72,7 +72,7 @@ axiosInstance.interceptors.response.use(
         }
 
         const response = await axios.post(
-          `${API_URL}/api/auth/refresh`,
+          `${API_URL}/api/tokens/refresh`,
           null,
           {
             headers: { 'RefreshToken': refreshToken },
@@ -80,8 +80,8 @@ axiosInstance.interceptors.response.use(
           }
         );
 
-        const newAccessToken = response.headers['AccessToken'];
-        const newRefreshToken = response.headers['RefreshToken'];
+        const newAccessToken = response.headers['accesstoken'];
+        const newRefreshToken = response.headers['refreshtoken'];
 
         if (newAccessToken && newRefreshToken) {
           localStorage.setItem('accessToken', newAccessToken);

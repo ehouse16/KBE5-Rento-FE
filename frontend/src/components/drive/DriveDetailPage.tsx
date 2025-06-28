@@ -67,6 +67,32 @@ const DriveDetailPage: React.FC = () => {
     }
   };
 
+  // 상태값 한글 변환 함수 및 색상 클래스 함수 수정
+  const getDriveStatusLabel = (status?: string) => {
+    switch (status) {
+      case "READY":
+        return "운행 전";
+      case "DRIVING":
+        return "운행 중";
+      case "COMPLETED":
+        return "운행 완료";
+      default:
+        return "알 수 없음";
+    }
+  };
+  const getStatusClass = (status?: string) => {
+    switch (status) {
+      case "READY":
+        return "bg-blue-100 text-blue-800";
+      case "DRIVING":
+        return "bg-green-100 text-green-800";
+      case "COMPLETED":
+        return "bg-red-100 text-red-800";
+      default:
+        return "bg-gray-100 text-gray-800";
+    }
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen bg-white flex items-center justify-center">
@@ -91,6 +117,8 @@ const DriveDetailPage: React.FC = () => {
     );
   }
 
+  const status = driveDetail.driveStatus;
+
   return (
     <div className="min-h-screen bg-white flex">
       <Sidebar activeTab="drives" setActiveTab={() => {}} />
@@ -111,34 +139,23 @@ const DriveDetailPage: React.FC = () => {
 
             {/* 상태 배지 */}
             <div className="mb-6">
-              <span className={`inline-block px-4 py-2 rounded-full text-white font-medium ${driveDetail.isStart ? "bg-[#8CD867]" : "bg-gray-500"}`}>
-                {driveDetail.isStart ? "운행중" : "운행완료"}
+              <span className={`inline-block px-4 py-2 rounded-full font-medium ${getStatusClass(status)}`}>
+                {getDriveStatusLabel(status)}
               </span>
             </div>
 
             {/* 차량 정보 카드 */}
             <div className="bg-white rounded-xl shadow-md p-6 mb-6">
               <div className="mb-6">
-                <h2 className="text-xl font-bold mb-1">{driveDetail.vehicle.modelName}</h2>
-                <p className="text-gray-600">{driveDetail.vehicle.vehicleNumber}</p>
+                <h2 className="text-xl font-bold mb-1">{driveDetail.vehicleNumber}</h2>
               </div>
               <div className="flex items-center">
-                <div className="w-12 h-12 rounded-full overflow-hidden bg-gray-200 mr-4">
-                  {driveDetail.member.profileImage ? (
-                    <img
-                      src={driveDetail.member.profileImage}
-                      alt="사용자 프로필"
-                      className="w-full h-full object-cover"
-                    />
-                  ) : (
-                    <div className="w-full h-full flex items-center justify-center bg-green-500 text-white">
-                      <i className="fas fa-user"></i>
-                    </div>
-                  )}
+                <div className="w-12 h-12 rounded-full overflow-hidden bg-gray-200 mr-4 flex items-center justify-center bg-green-500 text-white">
+                  <i className="fas fa-user"></i>
                 </div>
                 <div>
                   <p className="text-sm text-gray-500">운전자</p>
-                  <p className="font-medium">{driveDetail.member.name}</p>
+                  <p className="font-medium">{driveDetail.memberName}</p>
                 </div>
               </div>
             </div>
@@ -210,7 +227,7 @@ const DriveDetailPage: React.FC = () => {
             </div>
 
             {/* 이동 경로 맵 */}
-            {!driveDetail.isStart && path && path.length > 0 && (
+            {driveDetail.driveStatus === 'COMPLETED' && path && path.length > 0 && (
               <div className="bg-white rounded-xl shadow-md p-6 mb-6">
                 <h3 className="text-lg font-bold mb-4">이동 경로</h3>
                 {/* 출발/도착 마커 생성 */}
@@ -234,12 +251,13 @@ const DriveDetailPage: React.FC = () => {
             )}
 
             {/* 운행 종료 버튼 (운행 중일 때만 표시) */}
-            {driveDetail.isStart && (
+            {driveDetail.driveStatus === 'DRIVING' && (
               <button
                 onClick={handleEndDrive}
-                className="w-full py-4 bg-[#8CD867] text-white font-bold rounded-lg shadow-md hover:bg-opacity-90 transition-all"
+                className="w-full py-4 bg-[#8CD867] text-white font-bold rounded-lg shadow-md hover:bg-opacity-90 transition-colors duration-200"
+                disabled={endLoading}
               >
-                운행 종료하기
+                {endLoading ? '운행 종료 중...' : '운행 종료하기'}
               </button>
             )}
           </div>

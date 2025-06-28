@@ -36,6 +36,8 @@ interface DriveRegisterModalProps {
   selectedVehicleId?: string;
 }
 
+const CURRENT_YEAR = new Date().getFullYear();
+
 const DriveRegisterModal: React.FC<DriveRegisterModalProps> = ({ open, onClose, onSuccess, selectedVehicleId }) => {
   const [members, setMembers] = useState<Member[]>([]);
   const [vehicles, setVehicles] = useState<Vehicle[]>([]);
@@ -57,6 +59,12 @@ const DriveRegisterModal: React.FC<DriveRegisterModalProps> = ({ open, onClose, 
     endDateTime: false,
   });
   const [loading, setLoading] = useState(false);
+  const [startMonthDay, setStartMonthDay] = useState("");
+  const [startHour, setStartHour] = useState<string | null>(null);
+  const [endMonthDay, setEndMonthDay] = useState("");
+  const [endHour, setEndHour] = useState<string | null>(null);
+  const [amPm, setAmPm] = useState<'AM' | 'PM'>('AM');
+  const [amPmEnd, setAmPmEnd] = useState<'AM' | 'PM'>('AM');
 
   useEffect(() => {
     if (open) {
@@ -83,6 +91,35 @@ const DriveRegisterModal: React.FC<DriveRegisterModalProps> = ({ open, onClose, 
       }
     }
   }, [selectedVehicleId, vehicles]);
+
+  function to24Hour(hour12: string, ampm: 'AM' | 'PM') {
+    let h = parseInt(hour12, 10);
+    if (ampm === 'AM') {
+      if (h === 12) return '00';
+      return h.toString().padStart(2, '0');
+    } else {
+      if (h === 12) return '12';
+      return (h + 12).toString().padStart(2, '0');
+    }
+  }
+
+  useEffect(() => {
+    if (startMonthDay && startHour !== null) {
+      setFormData(f => ({
+        ...f,
+        startDateTime: `${CURRENT_YEAR}-${startMonthDay}T${to24Hour(startHour, amPm)}:00`
+      }));
+    }
+  }, [startMonthDay, startHour, amPm]);
+
+  useEffect(() => {
+    if (endMonthDay && endHour !== null) {
+      setFormData(f => ({
+        ...f,
+        endDateTime: `${CURRENT_YEAR}-${endMonthDay}T${to24Hour(endHour, amPmEnd)}:00`
+      }));
+    }
+  }, [endMonthDay, endHour, amPmEnd]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
@@ -127,8 +164,9 @@ const DriveRegisterModal: React.FC<DriveRegisterModalProps> = ({ open, onClose, 
       const res = await axiosInstance.post("/api/drives", payload);
       onSuccess();
       onClose();
-    } catch (err) {
-      alert("운행 예약 등록에 실패했습니다.");
+    } catch (err: any) {
+      const msg = err?.response?.data?.message || err?.response?.data?.error || "운행 예약 등록에 실패했습니다.";
+      alert(msg);
     } finally {
       setLoading(false);
     }
@@ -192,17 +230,69 @@ const DriveRegisterModal: React.FC<DriveRegisterModalProps> = ({ open, onClose, 
               className={`w-full px-4 py-3 border ${errors.endLocation ? "border-red-500" : "border-gray-300"} rounded-md`} />
             {errors.endLocation && <p className="text-red-500 text-xs mt-1">도착지는 필수 항목입니다.</p>}
           </div>
-          <div className="flex space-x-4">
+          <div className="flex flex-row gap-4 w-full">
             <div className="flex-1">
               <label className="block text-sm font-medium text-gray-700">출발 일시 <span className="text-red-500">*</span></label>
-              <input type="datetime-local" name="startDateTime" value={formData.startDateTime} onChange={handleChange}
-                className={`w-full px-4 py-3 border ${errors.startDateTime ? "border-red-500" : "border-gray-300"} rounded-md`} />
+              <div className="flex items-center gap-2 w-full">
+                <input
+                  type="date"
+                  value={startMonthDay ? `${CURRENT_YEAR}-${startMonthDay}` : ""}
+                  onChange={e => {
+                    const val = e.target.value;
+                    setStartMonthDay(val ? val.slice(5) : "");
+                  }}
+                  className={`px-3 py-2 border ${errors.startDateTime ? "border-red-500" : "border-gray-300"} rounded-md`}
+                  pattern="\\d{4}-\\d{2}-\\d{2}"
+                />
+              </div>
+              <div className="flex gap-2 mt-2">
+                <button type="button" className={`px-3 py-1 rounded ${amPm === 'AM' ? 'bg-green-500 text-white' : 'bg-gray-100'}`} onClick={() => setAmPm('AM')}>오전</button>
+                <button type="button" className={`px-3 py-1 rounded ${amPm === 'PM' ? 'bg-green-500 text-white' : 'bg-gray-100'}`} onClick={() => setAmPm('PM')}>오후</button>
+              </div>
+              <div className="flex flex-row flex-wrap gap-1 w-full mt-2">
+                {Array.from({ length: 12 }, (_, i) => (
+                  <button
+                    type="button"
+                    key={i+1}
+                    className={`min-w-[36px] px-1 py-1 rounded text-sm ${startHour === (i+1).toString().padStart(2, "0") ? "bg-green-500 text-white" : "bg-gray-100"}`}
+                    onClick={() => setStartHour((i+1).toString().padStart(2, "0"))}
+                  >
+                    {(i+1).toString().padStart(2, "0")}
+                  </button>
+                ))}
+              </div>
               {errors.startDateTime && <p className="text-red-500 text-xs mt-1">출발 일시는 필수 항목입니다.</p>}
             </div>
             <div className="flex-1">
               <label className="block text-sm font-medium text-gray-700">도착 일시 <span className="text-red-500">*</span></label>
-              <input type="datetime-local" name="endDateTime" value={formData.endDateTime} onChange={handleChange}
-                className={`w-full px-4 py-3 border ${errors.endDateTime ? "border-red-500" : "border-gray-300"} rounded-md`} />
+              <div className="flex items-center gap-2 w-full">
+                <input
+                  type="date"
+                  value={endMonthDay ? `${CURRENT_YEAR}-${endMonthDay}` : ""}
+                  onChange={e => {
+                    const val = e.target.value;
+                    setEndMonthDay(val ? val.slice(5) : "");
+                  }}
+                  className={`px-3 py-2 border ${errors.endDateTime ? "border-red-500" : "border-gray-300"} rounded-md`}
+                  pattern="\\d{4}-\\d{2}-\\d{2}"
+                />
+              </div>
+              <div className="flex gap-2 mt-2">
+                <button type="button" className={`px-3 py-1 rounded ${amPmEnd === 'AM' ? 'bg-green-500 text-white' : 'bg-gray-100'}`} onClick={() => setAmPmEnd('AM')}>오전</button>
+                <button type="button" className={`px-3 py-1 rounded ${amPmEnd === 'PM' ? 'bg-green-500 text-white' : 'bg-gray-100'}`} onClick={() => setAmPmEnd('PM')}>오후</button>
+              </div>
+              <div className="flex flex-row flex-wrap gap-1 w-full mt-2">
+                {Array.from({ length: 12 }, (_, i) => (
+                  <button
+                    type="button"
+                    key={i+1}
+                    className={`min-w-[36px] px-1 py-1 rounded text-sm ${endHour === (i+1).toString().padStart(2, "0") ? "bg-green-500 text-white" : "bg-gray-100"}`}
+                    onClick={() => setEndHour((i+1).toString().padStart(2, "0"))}
+                  >
+                    {(i+1).toString().padStart(2, "0")}
+                  </button>
+                ))}
+              </div>
               {errors.endDateTime && <p className="text-red-500 text-xs mt-1">도착 일시는 필수 항목입니다.</p>}
             </div>
           </div>
