@@ -16,6 +16,7 @@ interface Drive {
 
 interface DriveListProps {
   drives: Drive[];
+  renderExtra?: (drive: Drive) => React.ReactNode;
 }
 
 const formatDate = (dateString: string) => {
@@ -63,7 +64,7 @@ const getStatusClass = (status?: string) => {
   }
 };
 
-const DriveList: React.FC<DriveListProps> = ({ drives }) => {
+const DriveList: React.FC<DriveListProps> = ({ drives, renderExtra }) => {
   const navigate = useNavigate(); // useNavigate 다시 활성화
 
   const handleDriveClick = (driveId: number) => {
@@ -129,10 +130,12 @@ const DriveList: React.FC<DriveListProps> = ({ drives }) => {
               <i className="far fa-clock mr-1"></i>
               {formatTime(drive.startDate)} - {formatTime(drive.endDate)}
             </span>
-            <button className="text-green-600 hover:text-green-700 text-sm font-medium !rounded-button whitespace-nowrap cursor-pointer">
-              상세 보기{" "}
-              <i className="fas fa-chevron-right ml-1 text-xs"></i>
-            </button>
+            <div className="flex items-center gap-2">
+              <button className="text-green-600 hover:text-green-700 text-sm font-medium !rounded-button whitespace-nowrap cursor-pointer">
+                상세 보기 <i className="fas fa-chevron-right ml-1 text-xs"></i>
+              </button>
+              {renderExtra && renderExtra(drive)}
+            </div>
           </div>
         </div>
       ))}

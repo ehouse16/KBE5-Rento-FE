@@ -174,7 +174,7 @@ const VehicleDetailPage: React.FC = () => {
                       <div>
                         <p className="text-gray-500 text-sm">총 주행거리</p>
                         <p className="text-gray-800 font-semibold">
-                          {formatNumber(vehicle.totalDistanceKm)} km
+                          {(vehicle.totalDistanceKm / 1000).toFixed(1)} km
                         </p>
                       </div>
                     </div>

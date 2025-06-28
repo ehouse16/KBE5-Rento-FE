@@ -116,7 +116,11 @@ const VehicleTable: React.FC<VehicleTableProps> = ({ vehicles, sortConfig, setSo
                     <div className="text-sm text-gray-900">{vehicle.modelName}</div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="text-sm text-gray-900">{vehicle.totalDistanceKm?.toLocaleString?.() ?? '-'}</div>
+                    <div className="text-sm text-gray-900">
+                      {vehicle.totalDistanceKm !== undefined && vehicle.totalDistanceKm !== null
+                        ? `${Number(vehicle.totalDistanceKm / 1000).toLocaleString(undefined, { maximumFractionDigits: 1 })} km`
+                        : '-'}
+                    </div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
                     {vehicle.status === 'READY' ? (

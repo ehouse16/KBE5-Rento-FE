@@ -5,6 +5,7 @@ import Sidebar from "../Sidebar";
 import DriveList from "../drive/DriveList";
 import DriveRegisterModal from "../drive/DriveRegisterModal";
 import axiosInstance from '../../utils/axios';
+import { useNavigate } from 'react-router-dom';
 
 // DriveListPage 내부에서 사용할 간소화된 Drive 인터페이스 정의
 interface Drive {
@@ -29,6 +30,7 @@ const DriveListPage: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [totalElements, setTotalElements] = useState(0);
   const [statusTab, setStatusTab] = useState<'COMPLETED' | 'DRIVING' | 'READY'>('COMPLETED');
+  const navigate = useNavigate();
 
   useEffect(() => {
     const fetchDrives = async () => {
@@ -145,6 +147,11 @@ const DriveListPage: React.FC = () => {
 
   console.log("DriveList drives props:", drives);
 
+  // 관제 이동 핸들러
+  const handleGoToRealtime = (driveId: number) => {
+    navigate(`/realtime-event?driveId=${driveId}`);
+  };
+
   return (
     <div className="min-h-screen bg-white flex flex-col">
       <Header />
@@ -188,7 +195,14 @@ const DriveListPage: React.FC = () => {
               </div>
             </div>
 
-            <DriveList drives={filteredDrivesByStatus} />
+            <DriveList drives={filteredDrivesByStatus} renderExtra={(drive) => (
+              <button
+                className="ml-2 px-2 py-1 bg-blue-500 text-white rounded text-xs hover:bg-blue-600"
+                onClick={e => { e.stopPropagation(); handleGoToRealtime(drive.id); }}
+              >
+                관제
+              </button>
+            )} />
 
             <div className="mt-8 flex justify-center">
               <nav className="flex items-center">
