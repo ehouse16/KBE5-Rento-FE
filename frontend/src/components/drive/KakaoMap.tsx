@@ -25,11 +25,14 @@ interface KakaoMapProps {
   vehicleFocusId?: string | null;
   mapCenter?: { lat: number, lng: number };
   mapLevel?: number;
+  onUserInteraction?: () => void;
+  programmaticMove?: boolean; // 프로그래밍적 이동 여부 prop 추가
+  resetUserInteracted?: number; // 외부에서 userInteractedRef 리셋용 prop
 }
 
 const KAKAO_MAP_APP_KEY = process.env.REACT_APP_KAKAO_MAP_APP_KEY;
 
-const KakaoMap: React.FC<KakaoMapProps> = ({ vehiclePaths, vehicleMarkers, path, markers, onMapChange, vehicleFocusId, mapCenter, mapLevel }) => {
+const KakaoMap: React.FC<KakaoMapProps> = ({ vehiclePaths, vehicleMarkers, path, markers, onMapChange, vehicleFocusId, mapCenter, mapLevel, onUserInteraction, programmaticMove = false, resetUserInteracted }) => {
   const mapContainer = useRef<HTMLDivElement>(null);
   const mapRef = useRef<any>(null);
   const overlaysRef = useRef<any[]>([]); // 오버레이/폴리라인 추적
@@ -37,6 +40,8 @@ const KakaoMap: React.FC<KakaoMapProps> = ({ vehiclePaths, vehicleMarkers, path,
   const lastCenterRef = useRef<{ lat: number, lng: number } | null>(null);
   const lastLevelRef = useRef<number | null>(null);
   const lastFocusId = useRef<string | null>(null);
+  // 프로그래밍적 이동 중임을 나타내는 ref
+  const programmaticMovingRef = useRef(false);
 
   // 내부적으로 사용할 경로/마커 맵
   let mergedVehiclePaths: { [vehicleId: string]: PathPoint[] } = {};
@@ -138,33 +143,39 @@ const KakaoMap: React.FC<KakaoMapProps> = ({ vehiclePaths, vehicleMarkers, path,
   useEffect(() => {
     if (!window.kakao || !window.kakao.maps || !mapRef.current) return;
     const map = mapRef.current;
-    const onUserMove = () => { userInteractedRef.current = true; };
+    const onUserMove = () => {
+      // 프로그래밍 이동 중에는 무시
+      if (programmaticMovingRef.current) return;
+      userInteractedRef.current = true;
+      if (typeof onUserInteraction === 'function') onUserInteraction();
+    };
     window.kakao.maps.event.addListener(map, 'dragstart', onUserMove);
     window.kakao.maps.event.addListener(map, 'zoom_start', onUserMove);
     return () => {
       window.kakao.maps.event.removeListener(map, 'dragstart', onUserMove);
       window.kakao.maps.event.removeListener(map, 'zoom_start', onUserMove);
     };
-  }, []);
+  }, [onUserInteraction]);
 
   // 차량 포커스가 있을 때만 부드럽게 이동 (단, 사용자가 직접 지도 이동/줌 이후에는 자동 이동 없음)
   useEffect(() => {
     if (!window.kakao || !window.kakao.maps || !mapRef.current) return;
     const map = mapRef.current;
-    // 차량 목록에서 클릭한 경우(즉, vehicleFocusId가 null이 아닌 경우)에만 panTo 실행
     if (
       vehicleFocusId &&
       mergedVehicleMarkers[vehicleFocusId] &&
-      !userInteractedRef.current
+      !userInteractedRef.current &&
+      programmaticMove // programmaticMove가 true일 때만 이동
     ) {
       const marker = mergedVehicleMarkers[vehicleFocusId];
       const center = new window.kakao.maps.LatLng(marker.lat, marker.lng);
+      programmaticMovingRef.current = true;
       map.panTo(center);
-      // 한 번만 이동 후 vehicleFocusId를 null로 자동 해제 (부모에서 해제 필요시 콜백으로 처리)
-      // (이 부분은 부모에서 vehicleFocusId를 null로 해제하는 로직이 필요할 수 있음)
+      setTimeout(() => {
+        programmaticMovingRef.current = false;
+      }, 300); // 300ms 후 프로그래밍 이동 해제
     }
-    // vehicleFocusId가 null이면 아무 동작도 하지 않음
-  }, [vehicleFocusId, mergedVehicleMarkers]);
+  }, [vehicleFocusId, mergedVehicleMarkers, programmaticMove]);
 
   // vehiclePaths/vehicleMarkers 또는 path/markers가 바뀔 때마다 지도에 경로/마커 다시 그림
   useEffect(() => {
@@ -245,12 +256,23 @@ const KakaoMap: React.FC<KakaoMapProps> = ({ vehiclePaths, vehicleMarkers, path,
   // mapCenter prop이 바뀔 때마다 지도 중심 이동
   useEffect(() => {
     if (!window.kakao || !window.kakao.maps || !mapRef.current) return;
-    if (mapCenter) {
+    if (mapCenter && programmaticMove) {
       const map = mapRef.current;
       const center = new window.kakao.maps.LatLng(mapCenter.lat, mapCenter.lng);
+      programmaticMovingRef.current = true;
       map.setCenter(center);
+      setTimeout(() => {
+        programmaticMovingRef.current = false;
+      }, 300);
     }
-  }, [mapCenter]);
+  }, [mapCenter, programmaticMove]);
+
+  // 외부에서 userInteractedRef 리셋
+  React.useEffect(() => {
+    if (resetUserInteracted !== undefined) {
+      userInteractedRef.current = false;
+    }
+  }, [resetUserInteracted]);
 
   return <div ref={mapContainer} style={{ width: '100%', height: '1000px', borderRadius: '10px' }} />;
 };

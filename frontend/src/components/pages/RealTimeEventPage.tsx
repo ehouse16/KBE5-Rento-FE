@@ -45,6 +45,9 @@ const RealTimeEventPage: React.FC = () => {
   const [searchParams] = useSearchParams();
   const [noDataTimeout, setNoDataTimeout] = useState(false);
   const [listSearch, setListSearch] = useState('');
+  const userInteractedRef = useRef(false); // 사용자 지도 조작 감지 ref
+  const userInteractedTimer = useRef<NodeJS.Timeout | null>(null);
+  const [resetUserInteracted, setResetUserInteracted] = useState(0); // KakaoMap userInteractedRef 리셋용
 
   // driveId 쿼리 파싱
   const driveIdParam = searchParams.get('driveId');
@@ -231,21 +234,43 @@ const RealTimeEventPage: React.FC = () => {
 
   // 차량 목록 클릭 시 mdn으로 포커스 + 지도 중심/줌 이동
   const handleVehicleClick = (mdn: string) => {
-    setVehicleFocusId(mdn);
-    setVehicleSearch(''); // 전담 관제 진입 시 검색어 초기화
-    // 차량 위치가 있으면 지도 중심도 이동
-    const marker = vehicleMarkers[mdn];
-    if (marker) {
+    if (vehicleMarkers[mdn]) {
+      userInteractedRef.current = false; // 프로그래밍적 이동임을 명확히!
+      setVehicleSearch(''); // 전담 관제 진입 시 검색어 초기화
+      // 차량 위치가 있으면 지도 중심도 이동
+      const marker = vehicleMarkers[mdn];
       setMapCenter({ lat: marker.lat, lng: marker.lng });
       setMapLevel(4); // 차량 관제시 충분히 줌인
+      setVehicleFocusId(null);
+      setResetUserInteracted(prev => prev + 1);
+      setTimeout(() => {
+        setVehicleFocusId(mdn);
+        setResetUserInteracted(prev => prev + 1);
+      }, 100); // 100ms 딜레이 후 전담 관제 진입
+    } else {
+      window.alert('해당 차량의 실시간 위치 데이터가 아직 도착하지 않았습니다.');
     }
+  };
+
+  // KakaoMap에서 사용자 조작 이벤트를 감지할 수 있도록 콜백 추가
+  const handleUserMapInteraction = () => {
+    userInteractedRef.current = true;
+    if (userInteractedTimer.current) clearTimeout(userInteractedTimer.current);
+    userInteractedTimer.current = setTimeout(() => {
+      userInteractedRef.current = false;
+    }, 1000); // 1초 후 자동 리셋
   };
 
   // 지도에서 줌/이동 등 조작 시 전체 모드로 복귀 + center/level 갱신
   const handleMapChange = (center?: { lat: number, lng: number }, level?: number) => {
     if (center) setMapCenter(center);
     if (level !== undefined) setMapLevel(level);
-    setVehicleFocusId(null);
+    console.log('onMapChange', 'userInteractedRef:', userInteractedRef.current, 'vehicleFocusId:', vehicleFocusId);
+    if (userInteractedRef.current) {
+      setVehicleFocusId(null);
+      userInteractedRef.current = false;
+      if (userInteractedTimer.current) clearTimeout(userInteractedTimer.current);
+    }
   };
 
   // 운행 목록(drivingList)과 실시간 데이터(vehicleMarkers)의 mdn 합집합으로 표시할 차량 결정
@@ -271,8 +296,14 @@ const RealTimeEventPage: React.FC = () => {
   let mapMarkers = {};
   let mapPaths = {};
   if (vehicleFocusId) {
-    mapMarkers = vehicleMarkers[vehicleFocusId] ? { [vehicleFocusId]: vehicleMarkers[vehicleFocusId] } : {};
-    mapPaths = vehiclePaths[vehicleFocusId] ? { [vehicleFocusId]: vehiclePaths[vehicleFocusId] } : {};
+    if (vehicleMarkers[vehicleFocusId]) {
+      mapMarkers = { [vehicleFocusId]: vehicleMarkers[vehicleFocusId] };
+      mapPaths = vehiclePaths[vehicleFocusId] ? { [vehicleFocusId]: vehiclePaths[vehicleFocusId] } : {};
+    } else {
+      // 실시간 데이터가 아직 없을 때 임시 마커(로딩 표시 등)라도 전달
+      mapMarkers = { [vehicleFocusId]: { lat: mapCenter.lat, lng: mapCenter.lng, label: '로딩 중...' } };
+      mapPaths = {};
+    }
   } else if (vehicleSearch.trim()) {
     mapMarkers = Object.fromEntries(Object.entries(vehicleMarkers).filter(([id]) => id.includes(vehicleSearch.trim())));
     mapPaths = Object.fromEntries(Object.entries(vehiclePaths).filter(([id]) => id.includes(vehicleSearch.trim())));
@@ -385,6 +416,10 @@ const RealTimeEventPage: React.FC = () => {
           vehicleFocusId={vehicleFocusId}
           mapCenter={mapCenter}
           mapLevel={mapLevel}
+          // 사용자 조작 이벤트 콜백 전달
+          onUserInteraction={handleUserMapInteraction}
+          programmaticMove={true}
+          resetUserInteracted={resetUserInteracted}
         />
       </div>
     </div>
