@@ -14,8 +14,6 @@ import {
   Pie,
   Cell
 } from 'recharts';
-import VehicleAddModal from '../vehicle/VehicleAddModal';
-import { Department } from '../../services/departmentService';
 
 interface DashboardStats {
   totalVehicles: number;
@@ -43,18 +41,6 @@ interface MonthlyStats {
   nonBusinessRatio: number;
 }
 
-// 사용자 등록에 필요한 최소 타입
-interface MemberRegisterRequest {
-  name: string;
-  email: string;
-  position: string;
-  loginId: string;
-  password: string;
-  phoneNumber: string;
-  departmentId: number;
-  companyCode: string;
-}
-
 const COLORS = ['#1e90ff', '#00c49f', '#ffbb28', '#e5e7eb'];
 const toKm = (m: number) => (m / 1000).toLocaleString(undefined, { maximumFractionDigits: 1 });
 
@@ -78,29 +64,6 @@ const DashboardPage: React.FC = () => {
   // 연도/월 select 옵션
   const years = Array.from({ length: 5 }, (_, i) => new Date().getFullYear() - 2 + i);
   const months = Array.from({ length: 12 }, (_, i) => i + 1);
-
-  // 차량/사용자 등록 모달 상태
-  const [showVehicleModal, setShowVehicleModal] = useState(false);
-  const [showUserModal, setShowUserModal] = useState(false);
-  // 부서 목록 (차량/사용자 등록용)
-  const [departments, setDepartments] = useState<Department[]>([]);
-  // 직책 목록 (사용자 등록용)
-  const [positions, setPositions] = useState<string[]>([]);
-  // 사용자 등록 폼 상태
-  const [userForm, setUserForm] = useState<MemberRegisterRequest>({
-    name: '',
-    email: '',
-    position: '',
-    loginId: '',
-    password: '',
-    phoneNumber: '',
-    departmentId: 0,
-    companyCode: companyCode || '',
-  });
-  const [userFormErrors, setUserFormErrors] = useState<Record<string, string>>({});
-  const [isIdChecked, setIsIdChecked] = useState(false);
-  const [isEmailChecked, setIsEmailChecked] = useState(false);
-  const [isPhoneChecked, setIsPhoneChecked] = useState(false);
 
   // companyCode 최초 1회 세팅
   useEffect(() => {
@@ -179,17 +142,10 @@ const DashboardPage: React.FC = () => {
           ...prev,
           activeReservations: activeReservations.length,
         }));
-        // 현재 운행중인 차량(운행중 status)
-        const drivingCount = activeReservations.filter((d: any) => d.status === 'DRIVING').length;
-        setStats(prev => ({
-          ...prev,
-          operationLogs: drivingCount,
-        }));
       } catch {
         setStats(prev => ({
           ...prev,
           activeReservations: 0,
-          operationLogs: 0,
         }));
       }
     };
@@ -310,104 +266,6 @@ const DashboardPage: React.FC = () => {
   // Y축 최대값 계산
   const maxDistance = Math.max(...monthlyStats.map(s => s.totalDistance), 0);
 
-  // 부서/직책 목록 불러오기 (모달용)
-  useEffect(() => {
-    if (!companyCode) return;
-    const fetchMeta = async () => {
-      try {
-        const [deptRes, posRes] = await Promise.all([
-          axiosInstance.get(`/api/departments?companyCode=${companyCode}`),
-          axiosInstance.get('/api/members/positions'),
-        ]);
-        setDepartments(Array.isArray(deptRes.data.data) ? deptRes.data.data : []);
-        setPositions(Array.isArray(posRes.data.data) ? posRes.data.data : []);
-      } catch {}
-    };
-    fetchMeta();
-  }, [companyCode]);
-
-  // 사용자 등록 폼 핸들러/유효성 검사 (최소화)
-  const handleUserFormChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
-    const { name, value } = e.target;
-    setUserForm(prev => ({ ...prev, [name]: value }));
-    setUserFormErrors(prev => ({ ...prev, [name]: '' }));
-    if (name === 'loginId') setIsIdChecked(false);
-    if (name === 'email') setIsEmailChecked(false);
-    if (name === 'phoneNumber') setIsPhoneChecked(false);
-  };
-  const validateUserForm = () => {
-    const errors: Record<string, string> = {};
-    if (!userForm.name) errors.name = '이름은 필수 값입니다.';
-    if (!userForm.email) errors.email = '이메일은 필수 값입니다.';
-    else if (!/\S+@\S+\.\S+/.test(userForm.email)) errors.email = '유효한 이메일 형식이 아닙니다.';
-    if (!userForm.position) errors.position = '직책은 필수 값입니다.';
-    if (!userForm.loginId) errors.loginId = '아이디는 필수 값입니다.';
-    if (!userForm.password) errors.password = '비밀번호는 필수 값입니다.';
-    else if (userForm.password.length < 4) errors.password = '비밀번호는 4자리 이상이어야합니다.';
-    if (!userForm.phoneNumber) errors.phoneNumber = '전화번호는 필수 값입니다.';
-    else if (!/^\d{3}-\d{4}-\d{4}$/.test(userForm.phoneNumber)) errors.phoneNumber = '전화번호는 010-1234-5678 형식으로 입력하세요.';
-    if (!userForm.departmentId) errors.departmentId = '부서는 필수 값입니다.';
-    setUserFormErrors(errors);
-    return Object.keys(errors).length === 0;
-  };
-  // 중복확인 함수 (최소화)
-  const checkIdDuplicate = async () => {
-    if (!userForm.loginId) return alert('아이디를 입력하세요.');
-    try {
-      const res = await axiosInstance.get(`/api/members/check-id/${userForm.loginId}`);
-      if (res.data.data) { setIsIdChecked(true); alert('사용 가능한 아이디입니다.'); }
-      else { setIsIdChecked(false); alert('이미 사용 중인 아이디입니다.'); }
-    } catch { setIsIdChecked(false); alert('중복확인 실패'); }
-  };
-  const checkEmailDuplicate = async () => {
-    if (!userForm.email) return alert('이메일을 입력하세요.');
-    try {
-      const res = await axiosInstance.get(`/api/members/check-email/${userForm.email}`);
-      if (res.data.data) { setIsEmailChecked(true); alert('사용 가능한 이메일입니다.'); }
-      else { setIsEmailChecked(false); alert('이미 사용 중인 이메일입니다.'); }
-    } catch { setIsEmailChecked(false); alert('중복확인 실패'); }
-  };
-  const checkPhoneDuplicate = async () => {
-    if (!userForm.phoneNumber) return alert('전화번호를 입력하세요.');
-    try {
-      const res = await axiosInstance.get(`/api/members/check-phone/${userForm.phoneNumber}`);
-      if (res.data.data) { setIsPhoneChecked(true); alert('사용 가능한 전화번호입니다.'); }
-      else { setIsPhoneChecked(false); alert('이미 사용 중인 전화번호입니다.'); }
-    } catch { setIsPhoneChecked(false); alert('중복확인 실패'); }
-  };
-  // 사용자 저장
-  const saveUser = async () => {
-    if (!validateUserForm() || !isIdChecked || !isEmailChecked || !isPhoneChecked) return;
-    try {
-      await axiosInstance.post('/api/members', userForm);
-      alert('사용자가 등록되었습니다.');
-      setShowUserModal(false);
-      setUserForm({ name: '', email: '', position: '', loginId: '', password: '', phoneNumber: '', departmentId: 0, companyCode: companyCode || '' });
-      setIsIdChecked(false); setIsEmailChecked(false); setIsPhoneChecked(false);
-      // 등록 후 통계 새로고침
-      if (companyCode) {
-        const res = await axiosInstance.get(`/api/members?companyCode=${companyCode}`);
-        const driverList = Array.isArray(res.data.data?.content) ? res.data.data.content : [];
-        setStats(prev => ({ ...prev, totalDrivers: driverList.length }));
-      }
-    } catch {
-      alert('등록 실패');
-    }
-  };
-  // 차량 등록 성공 시 통계 새로고침
-  const handleVehicleAddSuccess = async () => {
-    setShowVehicleModal(false);
-    if (companyCode) {
-      const res = await axiosInstance.get('/api/vehicles');
-      const vehicleList = Array.isArray(res.data.data?.content)
-        ? res.data.data.content
-        : Array.isArray(res.data.data)
-        ? res.data.data
-        : [];
-      setStats(prev => ({ ...prev, totalVehicles: vehicleList.length }));
-    }
-  };
-
   // companyCode 없으면 로딩 표시
   if (!companyCode) {
     return <div className="flex justify-center items-center h-64">로딩 중...</div>;
@@ -419,7 +277,8 @@ const DashboardPage: React.FC = () => {
       <div className="flex items-center mb-2">
         <h1 className="text-2xl font-bold text-gray-900 mr-4">운행 리포트</h1>
       </div>
-      {/* 통계 카드들 (StatCardGrid만, +버튼 없이 원래대로) */}
+
+      {/* 통계 카드들 (기존) */}
       <StatCardGrid
         totalVehicles={stats.totalVehicles}
         activeReservations={stats.activeReservations}
@@ -548,75 +407,6 @@ const DashboardPage: React.FC = () => {
           </div>
         </div>
       </div>
-
-      {/* 차량 등록 모달 */}
-      <VehicleAddModal open={showVehicleModal} onClose={() => setShowVehicleModal(false)} onSuccess={handleVehicleAddSuccess} departments={departments.map(d => ({ id: String(d.departmentId), name: d.departmentName }))} />
-      {/* 사용자 등록 모달 */}
-      {showUserModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg w-full max-w-md mx-4">
-            <div className="p-6 border-b">
-              <h2 className="text-xl font-semibold text-gray-800">사용자 등록</h2>
-            </div>
-            <div className="p-6 space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">이름 <span className="text-red-500">*</span></label>
-                <input type="text" name="name" value={userForm.name} onChange={handleUserFormChange} className={`w-full px-3 py-2 border ${userFormErrors.name ? 'border-red-500' : 'border-gray-300'} rounded-md focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent text-sm`} />
-                {userFormErrors.name && <p className="mt-1 text-xs text-red-500">{userFormErrors.name}</p>}
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">이메일 <span className="text-red-500">*</span></label>
-                <div className="flex items-center">
-                  <input type="email" name="email" value={userForm.email} onChange={handleUserFormChange} className={`w-full px-3 py-2 border ${userFormErrors.email ? 'border-red-500' : 'border-gray-300'} rounded-md focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent text-sm`} />
-                  <button className="ml-2 min-w-[80px] px-3 py-1.5 bg-green-500 text-white text-sm font-medium rounded-md hover:bg-green-600 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 leading-tight" onClick={checkEmailDuplicate}>중복 확인</button>
-                </div>
-                {userFormErrors.email && <p className="mt-1 text-xs text-red-500">{userFormErrors.email}</p>}
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">직책 <span className="text-red-500">*</span></label>
-                <select name="position" value={userForm.position} onChange={handleUserFormChange} className={`w-full px-3 py-2 border ${userFormErrors.position ? 'border-red-500' : 'border-gray-300'} rounded-md focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent text-sm`}>
-                  <option value="">직책 선택</option>
-                  {positions.map(position => <option key={position} value={position}>{position}</option>)}
-                </select>
-                {userFormErrors.position && <p className="mt-1 text-xs text-red-500">{userFormErrors.position}</p>}
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">아이디 <span className="text-red-500">*</span></label>
-                <div className="flex items-center">
-                  <input type="text" name="loginId" value={userForm.loginId} onChange={handleUserFormChange} className={`w-full px-3 py-2 border ${userFormErrors.loginId ? 'border-red-500' : 'border-gray-300'} rounded-md focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent text-sm`} />
-                  <button className="ml-2 min-w-[80px] px-3 py-1.5 bg-green-500 text-white text-sm font-medium rounded-md hover:bg-green-600 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 leading-tight" onClick={checkIdDuplicate}>중복 확인</button>
-                </div>
-                {userFormErrors.loginId && <p className="mt-1 text-xs text-red-500">{userFormErrors.loginId}</p>}
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">비밀번호 <span className="text-red-500">*</span></label>
-                <input type="password" name="password" value={userForm.password} onChange={handleUserFormChange} className={`w-full px-3 py-2 border ${userFormErrors.password ? 'border-red-500' : 'border-gray-300'} rounded-md focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent text-sm`} />
-                {userFormErrors.password && <p className="mt-1 text-xs text-red-500">{userFormErrors.password}</p>}
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">전화번호 <span className="text-red-500">*</span></label>
-                <div className="flex items-center">
-                  <input type="text" name="phoneNumber" value={userForm.phoneNumber} placeholder="010-1234-5678" onChange={handleUserFormChange} className={`w-full px-3 py-2 border ${userFormErrors.phoneNumber ? 'border-red-500' : 'border-gray-300'} rounded-md focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent text-sm`} />
-                  <button className="ml-2 min-w-[80px] px-3 py-1.5 bg-green-500 text-white text-sm font-medium rounded-md hover:bg-green-600 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 leading-tight" onClick={checkPhoneDuplicate}>중복 확인</button>
-                </div>
-                {userFormErrors.phoneNumber && <p className="mt-1 text-xs text-red-500">{userFormErrors.phoneNumber}</p>}
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">부서 <span className="text-red-500">*</span></label>
-                <select name="departmentId" value={userForm.departmentId} onChange={handleUserFormChange} className={`w-full px-3 py-2 border ${userFormErrors.departmentId ? 'border-red-500' : 'border-gray-300'} rounded-md focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent text-sm`}>
-                  <option value="">부서 선택</option>
-                  {departments.map(dept => <option key={dept.departmentId} value={dept.departmentId}>{dept.departmentName}</option>)}
-                </select>
-                {userFormErrors.departmentId && <p className="mt-1 text-xs text-red-500">{userFormErrors.departmentId}</p>}
-              </div>
-            </div>
-            <div className="p-6 border-t bg-gray-50 flex justify-end">
-              <button className="px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 mr-3 hover:bg-gray-100 cursor-pointer !rounded-button whitespace-nowrap" onClick={() => setShowUserModal(false)}>취소</button>
-              <button className={`px-4 py-2 rounded-md text-sm font-medium !rounded-button whitespace-nowrap ${validateUserForm() && isIdChecked && isEmailChecked && isPhoneChecked ? 'bg-green-500 text-white hover:bg-green-600 cursor-pointer' : 'bg-gray-300 text-white cursor-not-allowed'}`} disabled={!(validateUserForm() && isIdChecked && isEmailChecked && isPhoneChecked)} onClick={saveUser}>저장</button>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 };

@@ -133,7 +133,7 @@ const VehicleFleetPage: React.FC = () => {
       <div className="flex flex-1">
         <Sidebar activeTab={activeTab} setActiveTab={setActiveTab} />
         <main className="flex-1 p-6">
-          <VehicleStats vehicles={allVehicles} totalElements={allVehicles.length} />
+          <VehicleStats vehicles={allVehicles} />
           <div className="flex justify-end items-center mb-2">
             <VehicleAddButton onClick={() => setAddModalOpen(true)} />
           </div>
@@ -153,8 +153,6 @@ const VehicleFleetPage: React.FC = () => {
             sortConfig={sortConfig}
             setSortConfig={setSortConfig}
             fetchVehicles={fetchVehicles}
-            currentPage={currentPage}
-            setCurrentPage={setCurrentPage}
           />
           <VehiclePagination
             currentPage={isNaN(currentPage) ? 1 : currentPage}
@@ -162,7 +160,6 @@ const VehicleFleetPage: React.FC = () => {
             setCurrentPage={setCurrentPage}
             itemsPerPage={isNaN(itemsPerPage) ? 5 : itemsPerPage}
             setItemsPerPage={setItemsPerPage}
-            totalElements={totalElements}
           />
         </main>
       </div>

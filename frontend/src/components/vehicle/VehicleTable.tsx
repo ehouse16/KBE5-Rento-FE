@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import VehicleEditModal from './VehicleEditModal';
 import axiosInstance from '../../utils/axios';
@@ -23,11 +23,9 @@ interface VehicleTableProps {
   sortConfig: SortConfig | null;
   setSortConfig: (config: SortConfig) => void;
   fetchVehicles: () => void;
-  currentPage: number;
-  setCurrentPage: (page: number) => void;
 }
 
-const VehicleTable: React.FC<VehicleTableProps> = ({ vehicles, sortConfig, setSortConfig, fetchVehicles, currentPage, setCurrentPage }) => {
+const VehicleTable: React.FC<VehicleTableProps> = ({ vehicles, sortConfig, setSortConfig, fetchVehicles }) => {
   const navigate = useNavigate();
   const [editModalOpen, setEditModalOpen] = useState(false);
   const [selectedVehicle, setSelectedVehicle] = useState<Vehicle | null>(null);
@@ -52,11 +50,7 @@ const VehicleTable: React.FC<VehicleTableProps> = ({ vehicles, sortConfig, setSo
     const res = await axiosInstance.delete(`/api/vehicles/${vehicleId}`);
     if (res.status === 200 || res.status === 204) {
       alert('삭제되었습니다.');
-      if (vehicles.length === 1 && currentPage > 1) {
-        setCurrentPage(currentPage - 1);
-      } else {
-        fetchVehicles();
-      }
+      fetchVehicles();
     } else {
       alert('삭제 실패');
     }
@@ -122,7 +116,11 @@ const VehicleTable: React.FC<VehicleTableProps> = ({ vehicles, sortConfig, setSo
                     <div className="text-sm text-gray-900">{vehicle.modelName}</div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="text-sm text-gray-900">{vehicle.totalDistanceKm?.toLocaleString?.() ?? '-'}</div>
+                    <div className="text-sm text-gray-900">
+                      {vehicle.totalDistanceKm !== undefined && vehicle.totalDistanceKm !== null
+                        ? `${Number(vehicle.totalDistanceKm / 1000).toLocaleString(undefined, { maximumFractionDigits: 1 })} km`
+                        : '-'}
+                    </div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
                     {vehicle.status === 'READY' ? (

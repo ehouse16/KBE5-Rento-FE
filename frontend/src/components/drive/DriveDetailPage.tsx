@@ -219,7 +219,7 @@ const DriveDetailPage: React.FC = () => {
                 <div className="bg-gray-50 rounded-lg p-6 text-center">
                   <p className="text-sm text-gray-500 mb-2">총 이동 거리</p>
                   <div className="flex items-center justify-center">
-                    <span className="text-3xl font-bold mr-2">{driveDetail.distance}</span>
+                    <span className="text-3xl font-bold mr-2">{(driveDetail.distance / 1000).toFixed(1)}</span>
                     <span className="text-gray-500">km</span>
                   </div>
                 </div>
