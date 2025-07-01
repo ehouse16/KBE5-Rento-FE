@@ -32,12 +32,22 @@ const DriveListPage: React.FC = () => {
   const [statusTab, setStatusTab] = useState<'READY' | 'DRIVING' | 'COMPLETED'>('READY');
   const [readyCount, setReadyCount] = useState(0);
   const [drivingCount, setDrivingCount] = useState(0);
+  const [startDate, setStartDate] = useState<string>("");
+  const [endDate, setEndDate] = useState<string>("");
   const navigate = useNavigate();
+
+  const formatDateTimeParam = (date: string, isStart: boolean) => {
+    if (!date) return '';
+    return `${date}T${isStart ? '00:00:00' : '23:59:59'}`;
+  };
 
   // 운행 목록 및 통계 동기화 함수
   const fetchDrivesAndStats = async () => {
     try {
-      const res = await axiosInstance.get("/api/drives");
+      const params = new URLSearchParams();
+      if (startDate) params.append('startDate', formatDateTimeParam(startDate, true));
+      if (endDate) params.append('endDate', formatDateTimeParam(endDate, false));
+      const res = await axiosInstance.get(`/api/drives?${params.toString()}`);
       const data = res.data;
       const drivesArr = Array.isArray(data.data?.content) ? data.data.content.map((d: any) => ({
         id: d.id,
@@ -61,7 +71,7 @@ const DriveListPage: React.FC = () => {
 
   useEffect(() => {
     fetchDrivesAndStats();
-  }, []);
+  }, [startDate, endDate]);
 
   const getStatusLabel = (status: 'COMPLETED' | 'DRIVING' | 'READY') => {
     switch (status) {
@@ -207,6 +217,14 @@ const DriveListPage: React.FC = () => {
                   </div>
                 </div>
               </div>
+            </div>
+
+            {/* 날짜 필터 UI */}
+            <div className="flex gap-2 mb-6 items-center">
+              <label className="text-sm text-gray-700">시작일</label>
+              <input type="date" value={startDate} onChange={e => setStartDate(e.target.value)} className="border rounded px-2 py-1" />
+              <label className="text-sm text-gray-700">종료일</label>
+              <input type="date" value={endDate} onChange={e => setEndDate(e.target.value)} className="border rounded px-2 py-1" />
             </div>
 
             <DriveList drives={filteredDrivesByStatus} renderExtra={(drive) => (
