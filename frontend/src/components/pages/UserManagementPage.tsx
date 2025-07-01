@@ -225,26 +225,27 @@ const UserManagementPage: React.FC = () => {
   }, [companyCode]);
 
   // 사용자 목록 및 페이징 데이터 로드
-  useEffect(() => {
+  const fetchPagedUsers = async () => {
     if (!companyCode) return;
-    const fetchPagedUsers = async () => {
-      try {
-        const res = await getMembers({
-          position: userPositionFilter !== '전체' ? userPositionFilter : undefined,
-          departmentId: userDepartmentFilter !== '전체' && departments.length > 0
-            ? departments.find(d => d.departmentName === userDepartmentFilter)?.departmentId
-            : undefined,
-          keyword: userSearch || undefined,
-          page: currentPage - 1,
-          size: itemsPerPage
-        });
-        setUsers(Array.isArray(res.data?.content) ? res.data.content : []);
-        setTotalElements(Number.isNaN(Number(res.data?.page?.totalElements)) ? 0 : Number(res.data?.page?.totalElements));
-      } catch (e) {
-        setUsers([]);
-        setTotalElements(0);
-      }
-    };
+    try {
+      const res = await getMembers({
+        position: userPositionFilter !== '전체' ? userPositionFilter : undefined,
+        departmentId: userDepartmentFilter !== '전체' && departments.length > 0
+          ? departments.find(d => d.departmentName === userDepartmentFilter)?.departmentId
+          : undefined,
+        keyword: userSearch || undefined,
+        page: currentPage - 1,
+        size: itemsPerPage
+      });
+      setUsers(Array.isArray(res.data?.content) ? res.data.content : []);
+      setTotalElements(Number.isNaN(Number(res.data?.page?.totalElements)) ? 0 : Number(res.data?.page?.totalElements));
+    } catch (e) {
+      setUsers([]);
+      setTotalElements(0);
+    }
+  };
+
+  useEffect(() => {
     fetchPagedUsers();
   }, [companyCode, currentPage, itemsPerPage, userDepartmentFilter, userPositionFilter, userSearch, departments]);
 
@@ -481,40 +482,18 @@ const UserManagementPage: React.FC = () => {
           companyCode: companyCode
         };
         await updateMember(editingUser.id, updateRequest);
-        const updatedUsers = await getMembers();
-        setUsers(updatedUsers.data?.content || []);
+        setShowUserModal(false);
+        fetchPagedUsers();
       } else {
         const registerRequest: MemberRegisterRequest = {
           ...userForm,
           companyCode: companyCode
         };
         await registerMember(registerRequest);
-        // 새로 등록 후 전체 개수로 마지막 페이지 계산
-        const res = await getMembers({
-          position: userPositionFilter !== '전체' ? userPositionFilter : undefined,
-          departmentId: userDepartmentFilter !== '전체' && departments.length > 0
-            ? departments.find(d => d.departmentName === userDepartmentFilter)?.departmentId
-            : undefined,
-          keyword: userSearch || undefined,
-          page: 0,
-          size: 10000
-        });
-        const total = Array.isArray(res.data?.content) ? res.data.content.length : 0;
-        const lastPage = Math.max(1, Math.ceil(total / itemsPerPage));
-        setCurrentPage(lastPage);
-        // 마지막 페이지 데이터만 다시 불러오기
-        const pagedRes = await getMembers({
-          position: userPositionFilter !== '전체' ? userPositionFilter : undefined,
-          departmentId: userDepartmentFilter !== '전체' && departments.length > 0
-            ? departments.find(d => d.departmentName === userDepartmentFilter)?.departmentId
-            : undefined,
-          keyword: userSearch || undefined,
-          page: lastPage - 1,
-          size: itemsPerPage
-        });
-        setUsers(Array.isArray(pagedRes.data?.content) ? pagedRes.data.content : []);
+        setCurrentPage(1); // 새로 등록 시 첫 페이지로 이동
+        setShowUserModal(false);
+        fetchPagedUsers();
       }
-      setShowUserModal(false);
       setError(null);
     } catch (error) {
       const errorMessage = handleApiError(error);
@@ -563,7 +542,7 @@ const UserManagementPage: React.FC = () => {
     if (window.confirm('정말로 이 사용자를 삭제하시겠습니까?')) {
       try {
         await deleteMember(id);
-        setUsers(users.filter(user => user.id !== id));
+        fetchPagedUsers();
         setError(null);
       } catch (error) {
         const errorMessage = handleApiError(error);
@@ -656,7 +635,7 @@ const UserManagementPage: React.FC = () => {
         {activeTab === 'users' && (
           <>
             {/* 사용자 통계 */}
-            <UserStats users={allUsers} departments={departments} positions={positions} />
+            <UserStats users={users} departments={departments} positions={positions} />
             {/* VehicleFilter 스타일의 필터 카드 */}
             <div className="w-full bg-white p-4 rounded-lg shadow-sm mb-6 flex flex-col md:flex-row flex-wrap md:items-end gap-4">
               <div className="flex-1 min-w-[180px] w-full md:w-auto">
