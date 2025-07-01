@@ -51,16 +51,27 @@ const VehicleTable: React.FC<VehicleTableProps> = ({ vehicles, sortConfig, setSo
   const handleDelete = async (vehicleId?: number) => {
     if (!vehicleId) return;
     if (!window.confirm('정말 삭제하시겠습니까?')) return;
-    const res = await axiosInstance.delete(`/api/vehicles/${vehicleId}`);
-    if (res.status === 200 || res.status === 204) {
-      alert('삭제되었습니다.');
-      if (vehicles.length === 1 && currentPage > 1) {
-        setCurrentPage(currentPage - 1);
+    try {
+      const res = await axiosInstance.delete(`/api/vehicles/${vehicleId}`);
+      if (res.status === 200 || res.status === 204) {
+        alert('삭제되었습니다.');
+        if (vehicles.length === 1 && currentPage > 1) {
+          setCurrentPage(currentPage - 1);
+        } else {
+          fetchVehicles();
+          fetchAllVehicles();
+        }
+      } else if (res.data && res.data.message && res.data.message.includes('해당 차량에 운행 예약/실시간 운행이 존재합니다')) {
+        alert('해당 차량에 운행 예약/실시간 운행이 존재합니다.');
+        return;
       } else {
-        fetchVehicles();
-        fetchAllVehicles();
+        alert('삭제 실패');
       }
-    } else {
+    } catch (error: any) {
+      if (error?.response?.data?.message && error.response.data.message.includes('해당 차량에 운행 예약/실시간 운행이 존재합니다')) {
+        alert('해당 차량에 운행 예약/실시간 운행이 존재합니다.');
+        return;
+      }
       alert('삭제 실패');
     }
   };

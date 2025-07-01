@@ -162,7 +162,7 @@ const VehicleFleetPage: React.FC = () => {
             />
           </div>
           <VehicleTable
-            vehicles={vehicles}
+            vehicles={vehicles.filter((v: any) => !v.delete)}
             sortConfig={sortConfig}
             setSortConfig={setSortConfig}
             fetchVehicles={fetchVehicles}

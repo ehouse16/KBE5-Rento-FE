@@ -9,6 +9,7 @@ export interface Member {
   phoneNumber: string;
   departmentId: number;
   departmentName: string;
+  delete: boolean;
 }
 
 export interface MemberRegisterRequest {

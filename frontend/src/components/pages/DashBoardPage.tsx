@@ -93,7 +93,7 @@ const DashboardPage: React.FC = () => {
           : [];
         setStats(prev => ({
           ...prev,
-          totalVehicles: vehicleList.length,
+          totalVehicles: vehicleList.filter((v: any) => !v.delete).length,
         }));
       } catch {
         setStats(prev => ({
@@ -116,7 +116,7 @@ const DashboardPage: React.FC = () => {
           : Array.isArray(res.data.data?.content)
           ? res.data.data.content
           : [];
-        const drivingVehicles = drives.filter((d: any) => d.status === 'DRIVING').length;
+        const drivingVehicles = drives.filter((d: any) => d.status === 'DRIVING' && !d.delete).length;
         setStats(prev => ({
           ...prev,
           operationLogs: drivingVehicles,
@@ -140,7 +140,7 @@ const DashboardPage: React.FC = () => {
         const driverList = Array.isArray(res.data.data?.content) ? res.data.data.content : [];
         setStats(prev => ({
           ...prev,
-          totalDrivers: driverList.length,
+          totalDrivers: driverList.filter((m: any) => !m.delete).length,
         }));
       } catch {
         setStats(prev => ({
@@ -165,7 +165,7 @@ const DashboardPage: React.FC = () => {
           : [];
         // 진행중인 예약: READY(운행 전) + DRIVING(운행 중)
         const activeReservations = drives.filter(
-          (d: any) => d.status === 'READY' || d.status === 'DRIVING'
+          (d: any) => (d.status === 'READY' || d.status === 'DRIVING') && !d.delete
         ).length;
         setStats(prev => ({
           ...prev,
@@ -407,7 +407,7 @@ const DashboardPage: React.FC = () => {
         </div>
 
 
-      {/* 공지사항 */}
+      {/* 공지사항 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <div className="lg:col-span-2">
           <div className="bg-white rounded-lg shadow-sm border border-gray-200">
@@ -435,7 +435,7 @@ const DashboardPage: React.FC = () => {
             </div>
           </div>
         </div>
-      </div>
+      </div>*/}
     </div>
   );
 };
