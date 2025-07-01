@@ -27,110 +27,110 @@ const UserStats: React.FC<{ users: Member[]; departments: Department[]; position
   return (
     <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
       {/* 총 사용자 */}
-<div className="bg-white p-5 rounded-lg shadow-sm border border-gray-100 flex flex-col justify-center items-center h-full min-h-[220px]">
-  <div className="flex flex-col items-center justify-center h-full">
-    <div className="bg-green-100 p-3 rounded-full mb-4">
-      <i className="fas fa-user text-green-500 text-2xl"></i>
+      <div className="bg-white p-5 rounded-lg shadow-sm border border-gray-100 flex flex-col items-center justify-center h-full min-h-[220px]">
+        <div className="flex flex-col items-center justify-center h-full">
+          <div className="bg-green-100 p-3 rounded-full mb-4">
+            <i className="fas fa-user text-green-500 text-2xl"></i>
+          </div>
+          <p className="text-gray-500 text-sm mb-1">총 사용자</p>
+          <h3 className="text-3xl font-bold">{total}</h3>
+        </div>
+      </div>
+      {/* 부서별 도넛 차트 */}
+      <div className="bg-white p-5 rounded-lg shadow-sm border border-gray-100 relative min-h-[260px] flex flex-col items-center">
+        <p className="text-gray-500 text-sm mb-2 text-center w-full">부서별 분포</p>
+        <div className="w-full relative" style={{ height: 180 }}>
+          <div style={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)' }}>
+            <ResponsiveContainer width={160} height={160}>
+              <PieChart>
+                <Pie
+                  data={deptStats}
+                  dataKey="value"
+                  nameKey="name"
+                  cx="50%"
+                  cy="50%"
+                  innerRadius={40}
+                  outerRadius={60}
+                  paddingAngle={2}
+                  label={false}
+                >
+                  {deptStats.map((entry, idx) => (
+                    <Cell key={`cell-dept-${entry.name}`} fill={COLORS[idx % COLORS.length]} />
+                  ))}
+                </Pie>
+                <Tooltip
+                  formatter={(value, name, props) => {
+                    const num = Number(value);
+                    return [`${num}명 (${total ? Math.round((num / total) * 100) : 0}%)`, name];
+                  }}
+                  wrapperStyle={{ zIndex: 1000 }}
+                />
+              </PieChart>
+            </ResponsiveContainer>
+          </div>
+        </div>
+        <ul className="mt-2 space-y-1 w-full text-center">
+          {deptStats.length === 0 && <li className="text-gray-400 text-sm">-</li>}
+          {deptStats.slice(0, 3).map((d, idx) => (
+            <li key={d.name} className="flex items-center justify-center text-sm text-gray-700">
+              <span className="inline-block w-3 h-3 rounded-full mr-2" style={{ background: COLORS[idx % COLORS.length] }}></span>
+              {d.name}: <span className="font-semibold ml-1">{d.value}</span>명
+              <span className="ml-2 text-xs text-gray-500">({total ? Math.round((d.value / total) * 100) : 0}%)</span>
+            </li>
+          ))}
+          {deptStats.length > 3 && (
+            <li className="text-gray-400 text-xs">+{posStats.slice(3).length} 더보기 (다른 직책도 확인하려면 그래프에 마우스를 올려주세요)</li>
+          )}
+        </ul>
+      </div>
+      {/* 직책별 도넛 차트 */}
+      <div className="bg-white p-5 rounded-lg shadow-sm border border-gray-100 relative min-h-[260px] flex flex-col items-center">
+        <p className="text-gray-500 text-sm mb-2 text-center w-full">직책별 분포</p>
+        <div className="w-full relative" style={{ height: 180 }}>
+          <div style={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)' }}>
+            <ResponsiveContainer width={160} height={160}>
+              <PieChart>
+                <Pie
+                  data={posStats}
+                  dataKey="value"
+                  nameKey="name"
+                  cx="50%"
+                  cy="50%"
+                  innerRadius={40}
+                  outerRadius={60}
+                  paddingAngle={2}
+                  label={false}
+                >
+                  {posStats.map((entry, idx) => (
+                    <Cell key={`cell-pos-${entry.name}`} fill={COLORS[idx % COLORS.length]} />
+                  ))}
+                </Pie>
+                <Tooltip
+                  formatter={(value, name, props) => {
+                    const num = Number(value);
+                    return [`${num}명 (${total ? Math.round((num / total) * 100) : 0}%)`, name];
+                  }}
+                  wrapperStyle={{ zIndex: 1000 }}
+                />
+              </PieChart>
+            </ResponsiveContainer>
+          </div>
+        </div>
+        <ul className="mt-2 space-y-1 w-full text-center">
+          {posStats.length === 0 && <li className="text-gray-400 text-sm">-</li>}
+          {posStats.slice(0, 3).map((p, idx) => (
+            <li key={p.name} className="flex items-center justify-center text-sm text-gray-700">
+              <span className="inline-block w-3 h-3 rounded-full mr-2" style={{ background: COLORS[idx % COLORS.length] }}></span>
+              {p.name}: <span className="font-semibold ml-1">{p.value}</span>명
+              <span className="ml-2 text-xs text-gray-500">({total ? Math.round((p.value / total) * 100) : 0}%)</span>
+            </li>
+          ))}
+          {posStats.length > 3 && (
+            <li className="text-gray-400 text-xs">+{posStats.slice(3).length} 더보기 (다른 직책도 확인하려면 그래프에 마우스를 올려주세요)</li>
+          )}
+        </ul>
+      </div>
     </div>
-    <p className="text-gray-500 text-sm mb-1">총 사용자</p>
-    <h3 className="text-3xl font-bold">{total}</h3>
-  </div>
-</div>
-{/* 부서별 도넛 차트 */}
-<div className="bg-white p-5 rounded-lg shadow-sm border border-gray-100 relative min-h-[260px] flex flex-col items-center">
-  <p className="text-gray-500 text-sm mb-2 text-center w-full">부서별 분포</p>
-  <div className="w-full relative" style={{ height: 180 }}>
-    <div style={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)' }}>
-      <ResponsiveContainer width={160} height={160}>
-        <PieChart>
-          <Pie
-            data={deptStats}
-            dataKey="value"
-            nameKey="name"
-            cx="50%"
-            cy="50%"
-            innerRadius={40}
-            outerRadius={60}
-            paddingAngle={2}
-            label={false}
-          >
-            {deptStats.map((entry, idx) => (
-              <Cell key={`cell-dept-${entry.name}`} fill={COLORS[idx % COLORS.length]} />
-            ))}
-          </Pie>
-          <Tooltip
-            formatter={(value, name, props) => {
-              const num = Number(value);
-              return [`${num}명 (${total ? Math.round((num / total) * 100) : 0}%)`, name];
-            }}
-            wrapperStyle={{ zIndex: 1000 }}
-          />
-        </PieChart>
-      </ResponsiveContainer>
-    </div>
-  </div>
-  <ul className="mt-2 space-y-1 w-full text-center">
-    {deptStats.length === 0 && <li className="text-gray-400 text-sm">-</li>}
-    {deptStats.slice(0, 3).map((d, idx) => (
-      <li key={d.name} className="flex items-center justify-center text-sm text-gray-700">
-        <span className="inline-block w-3 h-3 rounded-full mr-2" style={{ background: COLORS[idx % COLORS.length] }}></span>
-        {d.name}: <span className="font-semibold ml-1">{d.value}</span>명
-        <span className="ml-2 text-xs text-gray-500">({total ? Math.round((d.value / total) * 100) : 0}%)</span>
-      </li>
-    ))}
-    {deptStats.length > 3 && (
-      <li className="text-gray-400 text-xs">+{posStats.slice(3).length} 더보기 (다른 직책도 확인하려면 그래프에 마우스를 올려주세요)</li>
-    )}
-  </ul>
-</div>
-{/* 직책별 도넛 차트 */}
-<div className="bg-white p-5 rounded-lg shadow-sm border border-gray-100 relative min-h-[260px] flex flex-col items-center">
-  <p className="text-gray-500 text-sm mb-2 text-center w-full">직책별 분포</p>
-  <div className="w-full relative" style={{ height: 180 }}>
-    <div style={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)' }}>
-      <ResponsiveContainer width={160} height={160}>
-        <PieChart>
-          <Pie
-            data={posStats}
-            dataKey="value"
-            nameKey="name"
-            cx="50%"
-            cy="50%"
-            innerRadius={40}
-            outerRadius={60}
-            paddingAngle={2}
-            label={false}
-          >
-            {posStats.map((entry, idx) => (
-              <Cell key={`cell-pos-${entry.name}`} fill={COLORS[idx % COLORS.length]} />
-            ))}
-          </Pie>
-          <Tooltip
-            formatter={(value, name, props) => {
-              const num = Number(value);
-              return [`${num}명 (${total ? Math.round((num / total) * 100) : 0}%)`, name];
-            }}
-            wrapperStyle={{ zIndex: 1000 }}
-          />
-        </PieChart>
-      </ResponsiveContainer>
-    </div>
-  </div>
-  <ul className="mt-2 space-y-1 w-full text-center">
-    {posStats.length === 0 && <li className="text-gray-400 text-sm">-</li>}
-    {posStats.slice(0, 3).map((p, idx) => (
-      <li key={p.name} className="flex items-center justify-center text-sm text-gray-700">
-        <span className="inline-block w-3 h-3 rounded-full mr-2" style={{ background: COLORS[idx % COLORS.length] }}></span>
-        {p.name}: <span className="font-semibold ml-1">{p.value}</span>명
-        <span className="ml-2 text-xs text-gray-500">({total ? Math.round((p.value / total) * 100) : 0}%)</span>
-      </li>
-    ))}
-    {posStats.length > 3 && (
-      <li className="text-gray-400 text-xs">+{posStats.slice(3).length} 더보기 (다른 직책도 확인하려면 그래프에 마우스를 올려주세요)</li>
-    )}
-  </ul>
-</div>
-</div>
   );
 };
 
@@ -596,6 +596,12 @@ const UserManagementPage: React.FC = () => {
 
       {/* 메인 콘텐츠 */}
       <main className="flex-1 p-6">
+        {/* 사용자 통계 - 탭/추가버튼 위에 위치 */}
+        {activeTab === 'users' && (
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-8">
+            <UserStats users={allUsers} departments={departments} positions={positions} />
+          </div>
+        )}
         {/* 추가 버튼: 탭 위, 오른쪽 정렬 */}
         <div className="flex justify-end mb-2">
           {activeTab === 'users' && (
@@ -638,8 +644,6 @@ const UserManagementPage: React.FC = () => {
         {/* 사용자 관리 */}
         {activeTab === 'users' && (
           <>
-            {/* 사용자 통계 */}
-            <UserStats users={allUsers} departments={departments} positions={positions} />
             {/* VehicleFilter 스타일의 필터 카드 */}
             <div className="w-full bg-white p-4 rounded-lg shadow-sm mb-6 flex flex-col md:flex-row flex-wrap md:items-end gap-4">
               <div className="flex-1 min-w-[180px] w-full md:w-auto">
