@@ -153,6 +153,8 @@ const VehicleFleetPage: React.FC = () => {
             sortConfig={sortConfig}
             setSortConfig={setSortConfig}
             fetchVehicles={fetchVehicles}
+            currentPage={currentPage}
+            setCurrentPage={setCurrentPage}
           />
           <VehiclePagination
             currentPage={isNaN(currentPage) ? 1 : currentPage}

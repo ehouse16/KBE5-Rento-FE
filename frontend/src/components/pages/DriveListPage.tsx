@@ -32,35 +32,48 @@ const DriveListPage: React.FC = () => {
   const [statusTab, setStatusTab] = useState<'COMPLETED' | 'DRIVING' | 'READY'>('COMPLETED');
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(5);
+  const [totalPages, setTotalPages] = useState(1);
+
+  const fetchDrives = async (page = 1, size = 5) => {
+    setLoading(true);
+    try {
+      const res = await axiosInstance.get(`/api/drives?page=${page - 1}&size=${size}`); // 0-based
+      const pageData = res.data.data || {};
+      setDrives(
+        Array.isArray(pageData.content)
+          ? pageData.content.map((d: any) => ({
+              id: d.id,
+              memberName: d.memberName || "알 수 없음",
+              vehicleNumber: d.vehicleNumber || "알 수 없음",
+              startDate: d.startDate ? d.startDate.replace("T", " ").slice(0, 16) : "",
+              endDate: d.endDate ? d.endDate.replace("T", " ").slice(0, 16) : "",
+              startLocation: d.startLocation || "알 수 없음",
+              endLocation: d.endLocation || "알 수 없음",
+              isStart: d.isStart,
+              status: d.status as "READY" | "DRIVING" | "COMPLETED" | undefined,
+            }))
+          : []
+      );
+      setTotalElements(pageData.totalElements || 0);
+      setTotalPages(pageData.totalPages || 1);
+      setCurrentPage((pageData.number || 0) + 1); // 1-based
+    } catch (e) {
+      setError('운행 목록을 불러오지 못했습니다.');
+      console.error("운행 목록 에러:", e);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   useEffect(() => {
-    const fetchDrives = async () => {
-      console.log("운행 목록 useEffect 실행됨");
-      try {
-        const res = await axiosInstance.get("/api/drives");
-        console.log("운행 목록 API 응답:", res.data);
-        const data = res.data;
-        setDrives(
-          (Array.isArray(data.data) ? data.data : []).map((d: any) => ({
-            id: d.id,
-            memberName: d.memberName || "알 수 없음",
-            vehicleNumber: d.vehicleNumber || "알 수 없음",
-            startDate: d.startDate ? d.startDate.replace("T", " ").slice(0, 16) : "",
-            endDate: d.endDate ? d.endDate.replace("T", " ").slice(0, 16) : "",
-            startLocation: d.startLocation || "알 수 없음",
-            endLocation: d.endLocation || "알 수 없음",
-            isStart: d.isStart,
-            status: d.status as "READY" | "DRIVING" | "COMPLETED" | undefined,
-          }))
-        );
-        setTotalElements(Number.isNaN(Number(data.data?.totalElements)) ? 0 : Number(data.data?.totalElements));
-      } catch (e) {
-        setError('운행 목록을 불러오지 못했습니다.');
-        console.error("운행 목록 에러:", e);
-      }
-    };
-    fetchDrives();
-  }, []);
+    fetchDrives(currentPage, itemsPerPage);
+  }, [currentPage, itemsPerPage]);
+
+  const handlePageChange = (page: number) => {
+    if (page >= 1 && page <= totalPages) {
+      setCurrentPage(page);
+    }
+  };
 
   const getStatusLabel = (status: 'COMPLETED' | 'DRIVING' | 'READY') => {
     switch (status) {
@@ -196,16 +209,18 @@ const DriveListPage: React.FC = () => {
 
             <DriveList drives={paginatedDrives} />
 
-            <div className="mt-4">
-              <VehiclePagination
-                currentPage={currentPage}
-                totalPages={Math.max(1, Math.ceil(filteredDrivesByStatus.length / itemsPerPage))}
-                setCurrentPage={setCurrentPage}
-                itemsPerPage={itemsPerPage}
-                setItemsPerPage={setItemsPerPage}
-                totalElements={filteredDrivesByStatus.length}
-              />
-            </div>
+            {totalPages > 1 && (
+              <div className="mt-4">
+                <VehiclePagination
+                  currentPage={currentPage}
+                  totalPages={totalPages}
+                  setCurrentPage={setCurrentPage}
+                  itemsPerPage={itemsPerPage}
+                  setItemsPerPage={setItemsPerPage}
+                  totalElements={totalElements}
+                />
+              </div>
+            )}
           </div>
         </div>
       </div>
