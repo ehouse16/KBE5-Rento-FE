@@ -7,11 +7,11 @@ interface OperationLogsCardProps {
 
 const OperationLogsCard: React.FC<OperationLogsCardProps> = ({ value }) => (
   <StatCardBase
-    title="운행 일지"
+    title="운행중인 차량"
     value={value}
-    icon="fa-book"
+    icon="fa-car-side"
     color="bg-orange-500"
-    unit="건"
+    unit="대"
   />
 );
 

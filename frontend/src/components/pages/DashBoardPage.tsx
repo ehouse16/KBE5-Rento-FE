@@ -105,6 +105,32 @@ const DashboardPage: React.FC = () => {
     fetchVehicleCount();
   }, [companyCode]);
 
+  // 🚦 운행중인 차량 수 (운행 중 상태만)
+  useEffect(() => {
+    if (!companyCode) return;
+    const fetchDrivingVehicles = async () => {
+      try {
+        const res = await axiosInstance.get('/api/drives');
+        const drives = Array.isArray(res.data.data)
+          ? res.data.data
+          : Array.isArray(res.data.data?.content)
+          ? res.data.data.content
+          : [];
+        const drivingVehicles = drives.filter((d: any) => d.status === 'DRIVING').length;
+        setStats(prev => ({
+          ...prev,
+          operationLogs: drivingVehicles,
+        }));
+      } catch {
+        setStats(prev => ({
+          ...prev,
+          operationLogs: 0,
+        }));
+      }
+    };
+    fetchDrivingVehicles();
+  }, [companyCode]);
+
   // 🚕 운전자 수 (companyCode 필요)
   useEffect(() => {
     if (!companyCode) return;
@@ -126,21 +152,24 @@ const DashboardPage: React.FC = () => {
     fetchDriverCount();
   }, [companyCode]);
 
-  // 🚙 운행 예약 수 (여기도 companyCode 필요하면 파라미터로 추가!)
+  // 🚙 진행중인 예약 수 (운행 전 + 운행 중)
   useEffect(() => {
     if (!companyCode) return;
     const fetchActiveReservations = async () => {
       try {
         const res = await axiosInstance.get('/api/drives');
-        // 배열로 내려오면 그대로, content에 있으면 content로!
-        const activeReservations = Array.isArray(res.data.data)
+        const drives = Array.isArray(res.data.data)
           ? res.data.data
           : Array.isArray(res.data.data?.content)
           ? res.data.data.content
           : [];
+        // 진행중인 예약: READY(운행 전) + DRIVING(운행 중)
+        const activeReservations = drives.filter(
+          (d: any) => d.status === 'READY' || d.status === 'DRIVING'
+        ).length;
         setStats(prev => ({
           ...prev,
-          activeReservations: activeReservations.length,
+          activeReservations,
         }));
       } catch {
         setStats(prev => ({
