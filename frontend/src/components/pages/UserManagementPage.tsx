@@ -211,16 +211,17 @@ const UserManagementPage: React.FC = () => {
   }, []);
 
   // Fetch all users (no filters) once on mount or when companyCode changes
-  useEffect(() => {
+  const fetchAllUsers = async () => {
     if (!companyCode) return;
-    const fetchAllUsers = async () => {
-      try {
-        const res = await getMembers({ page: 0, size: 10000 }); // large size to get all
-        setAllUsers(Array.isArray(res.data?.content) ? res.data.content : []);
-      } catch {
-        setAllUsers([]);
-      }
-    };
+    try {
+      const res = await getMembers({ page: 0, size: 10000 }); // large size to get all
+      setAllUsers(Array.isArray(res.data?.content) ? res.data.content : []);
+    } catch {
+      setAllUsers([]);
+    }
+  };
+
+  useEffect(() => {
     fetchAllUsers();
   }, [companyCode]);
 
@@ -484,6 +485,7 @@ const UserManagementPage: React.FC = () => {
         await updateMember(editingUser.id, updateRequest);
         setShowUserModal(false);
         fetchPagedUsers();
+        fetchAllUsers();
       } else {
         const registerRequest: MemberRegisterRequest = {
           ...userForm,
@@ -493,6 +495,7 @@ const UserManagementPage: React.FC = () => {
         setCurrentPage(1); // 새로 등록 시 첫 페이지로 이동
         setShowUserModal(false);
         fetchPagedUsers();
+        fetchAllUsers();
       }
       setError(null);
     } catch (error) {
@@ -543,6 +546,7 @@ const UserManagementPage: React.FC = () => {
       try {
         await deleteMember(id);
         fetchPagedUsers();
+        fetchAllUsers();
         setError(null);
       } catch (error) {
         const errorMessage = handleApiError(error);
@@ -635,7 +639,7 @@ const UserManagementPage: React.FC = () => {
         {activeTab === 'users' && (
           <>
             {/* 사용자 통계 */}
-            <UserStats users={users} departments={departments} positions={positions} />
+            <UserStats users={allUsers} departments={departments} positions={positions} />
             {/* VehicleFilter 스타일의 필터 카드 */}
             <div className="w-full bg-white p-4 rounded-lg shadow-sm mb-6 flex flex-col md:flex-row flex-wrap md:items-end gap-4">
               <div className="flex-1 min-w-[180px] w-full md:w-auto">
