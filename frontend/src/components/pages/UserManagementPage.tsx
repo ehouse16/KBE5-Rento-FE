@@ -485,19 +485,16 @@ const UserManagementPage: React.FC = () => {
           companyCode: companyCode
         };
         await updateMember(editingUser.id, updateRequest);
-        const updatedUsers = await getMembers();
-        setUsers(updatedUsers.data?.content || []);
       } else {
         const registerRequest: MemberRegisterRequest = {
           ...userForm,
           companyCode: companyCode
         };
         await registerMember(registerRequest);
-        const updatedUsers = await getMembers();
-        setUsers(updatedUsers.data?.content || []);
       }
       setShowUserModal(false);
       setError(null);
+      await fetchPagedUsers(); // 페이지네이션 실시간 반영
       fetchAllUsers();
     } catch (error) {
       const errorMessage = handleApiError(error);

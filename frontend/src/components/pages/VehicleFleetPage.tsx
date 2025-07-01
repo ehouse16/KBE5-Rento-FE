@@ -57,16 +57,21 @@ const VehicleFleetPage: React.FC = () => {
     if (onlyFree) params.append('onlyFree', 'true');
     params.append('page', String(isNaN(currentPage) ? 1 : currentPage - 1));
     params.append('size', String(isNaN(itemsPerPage) ? 5 : itemsPerPage));
+    params.append('sort', 'id,desc');
     if (search.trim()) {
       params.append('vehicleNumber', search.trim());
       const res = await axiosInstance.get(`/api/vehicles/search?${params.toString()}`);
       const data = res.data;
-      setVehicles(Array.isArray(data.data?.content) ? data.data.content : []);
+      setVehicles(
+        (Array.isArray(data.data?.content) ? data.data.content : []).sort((a: any, b: any) => b.id - a.id)
+      );
       setTotalElements(Number.isNaN(Number(data.data?.page?.totalElements)) ? 0 : Number(data.data?.page?.totalElements));
     } else {
       const res = await axiosInstance.get(`/api/vehicles?${params.toString()}`);
       const data = res.data;
-      setVehicles(Array.isArray(data.data?.content) ? data.data.content : []);
+      setVehicles(
+        (Array.isArray(data.data?.content) ? data.data.content : []).sort((a: any, b: any) => b.id - a.id)
+      );
       setTotalElements(Number.isNaN(Number(data.data?.page?.totalElements)) ? 0 : Number(data.data?.page?.totalElements));
     }
   };
@@ -113,8 +118,11 @@ const VehicleFleetPage: React.FC = () => {
 
   // 차량 등록 성공 시 목록 및 통계 새로고침
   const handleAddSuccess = () => {
-    fetchVehicles();
-    fetchAllVehicles();
+    setCurrentPage(1);
+    setTimeout(() => {
+      fetchVehicles();
+      fetchAllVehicles();
+    }, 0);
   };
 
   // 전체 차량 리스트 불러오기 (검색/필터와 무관하게)

@@ -13,13 +13,11 @@ interface VehicleFilterProps {
   setOnlyFree: (v: boolean) => void;
   search: string;
   setSearch: (v: string) => void;
-  onSearchKeyDown?: (e: React.KeyboardEvent<HTMLInputElement>) => void;
 }
 
 const VehicleFilter: React.FC<VehicleFilterProps> = ({
   departments, departmentFilter, setDepartmentFilter,
-  onlyFree, setOnlyFree, search, setSearch,
-  onSearchKeyDown
+  onlyFree, setOnlyFree, search, setSearch
 }) => (
   <div className="w-full bg-white p-4 rounded-lg shadow-sm mb-6 flex flex-wrap items-end gap-4">
     <div className="flex-1 min-w-[200px]">
@@ -53,10 +51,9 @@ const VehicleFilter: React.FC<VehicleFilterProps> = ({
       <input
         type="text"
         className="block w-full h-12 pl-10 pr-3 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-green-500 focus:border-green-500 text-base"
-        placeholder="차량 번호 또는 모델명 검색"
+        placeholder="차량 번호 검색"
         value={search}
         onChange={e => setSearch(e.target.value)}
-        onKeyDown={onSearchKeyDown}
       />
       <div className="absolute left-0 top-12 -translate-y-1/2 pl-3 flex items-center pointer-events-none">
         <i className="fas fa-search text-gray-400 text-lg"></i>
