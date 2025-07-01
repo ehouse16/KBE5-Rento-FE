@@ -267,6 +267,20 @@ const KakaoMap: React.FC<KakaoMapProps> = ({ vehiclePaths, vehicleMarkers, path,
     }
   }, [mapCenter, programmaticMove]);
 
+  // path만 있을 때 지도 중심과 확대를 경로 전체가 보이도록 자동 조정
+  useEffect(() => {
+    if (!window.kakao || !window.kakao.maps || !mapRef.current) return;
+    if (path && path.length > 1 && !mapCenter) {
+      const bounds = new window.kakao.maps.LatLngBounds();
+      path.forEach(p => bounds.extend(new window.kakao.maps.LatLng(p.latitude, p.longitude)));
+      mapRef.current.setBounds(bounds);
+    } else if (path && path.length === 1 && !mapCenter) {
+      // 한 점만 있을 때는 중심만 이동
+      const center = new window.kakao.maps.LatLng(path[0].latitude, path[0].longitude);
+      mapRef.current.setCenter(center);
+    }
+  }, [path, mapCenter]);
+
   // 외부에서 userInteractedRef 리셋
   React.useEffect(() => {
     if (resetUserInteracted !== undefined) {
