@@ -30,36 +30,50 @@ const DriveListPage: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [totalElements, setTotalElements] = useState(0);
   const [statusTab, setStatusTab] = useState<'COMPLETED' | 'DRIVING' | 'READY'>('COMPLETED');
+  const [currentPage, setCurrentPage] = useState(0);
+  const [totalPages, setTotalPages] = useState(0);
   const navigate = useNavigate();
 
+  const fetchDrives = async (page = 0) => {
+    setLoading(true);
+    try {
+      // API 호출 시 페이지 번호와 정렬, 검색 조건 등을 파라미터로 전달해야 합니다. (백엔드 구현에 따라 달라짐)
+      const res = await axiosInstance.get(`/api/drives?page=${page}`);
+      const pageData = res.data.data || {}; // API 응답 구조에 따라 조정
+
+      setDrives(
+        (Array.isArray(pageData.content) ? pageData.content : []).map((d: any) => ({
+          id: d.id,
+          memberName: d.memberName || "알 수 없음",
+          vehicleNumber: d.vehicleNumber || "알 수 없음",
+          startDate: d.startDate ? d.startDate.replace("T", " ").slice(0, 16) : "",
+          endDate: d.endDate ? d.endDate.replace("T", " ").slice(0, 16) : "",
+          startLocation: d.startLocation || "알 수 없음",
+          endLocation: d.endLocation || "알 수 없음",
+          isStart: d.isStart,
+          status: d.status as "READY" | "DRIVING" | "COMPLETED" | undefined,
+        }))
+      );
+      setTotalElements(pageData.totalElements || 0);
+      setTotalPages(pageData.totalPages || 0);
+      setCurrentPage(pageData.number || 0);
+    } catch (e) {
+      setError('운행 목록을 불러오지 못했습니다.');
+      console.error("운행 목록 에러:", e);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   useEffect(() => {
-    const fetchDrives = async () => {
-      console.log("운행 목록 useEffect 실행됨");
-      try {
-        const res = await axiosInstance.get("/api/drives");
-        console.log("운행 목록 API 응답:", res.data);
-        const data = res.data;
-        setDrives(
-          (Array.isArray(data.data) ? data.data : []).map((d: any) => ({
-            id: d.id,
-            memberName: d.memberName || "알 수 없음",
-            vehicleNumber: d.vehicleNumber || "알 수 없음",
-            startDate: d.startDate ? d.startDate.replace("T", " ").slice(0, 16) : "",
-            endDate: d.endDate ? d.endDate.replace("T", " ").slice(0, 16) : "",
-            startLocation: d.startLocation || "알 수 없음",
-            endLocation: d.endLocation || "알 수 없음",
-            isStart: d.isStart,
-            status: d.status as "READY" | "DRIVING" | "COMPLETED" | undefined,
-          }))
-        );
-        setTotalElements(Number.isNaN(Number(data.data?.totalElements)) ? 0 : Number(data.data?.totalElements));
-      } catch (e) {
-        setError('운행 목록을 불러오지 못했습니다.');
-        console.error("운행 목록 에러:", e);
-      }
-    };
-    fetchDrives();
-  }, []);
+    fetchDrives(currentPage);
+  }, [currentPage]);
+
+  const handlePageChange = (page: number) => {
+    if (page >= 0 && page < totalPages) {
+      setCurrentPage(page);
+    }
+  };
 
   const getStatusLabel = (status: 'COMPLETED' | 'DRIVING' | 'READY') => {
     switch (status) {
@@ -97,33 +111,10 @@ const DriveListPage: React.FC = () => {
 
   console.log("filteredDrives:", filteredDrives);
 
-  const handleRegisterSuccess = () => {
+  const handleRegisterSuccess = (message: string) => {
     setRegisterOpen(false);
-    const fetchDrives = async () => {
-      try {
-        const res = await axiosInstance.get("/api/drives");
-        console.log("운행 목록 API 응답(등록 후):", res.data);
-        const data = res.data;
-        setDrives(
-          (Array.isArray(data.data) ? data.data : []).map((d: any) => ({
-            id: d.id,
-            memberName: d.memberName || "알 수 없음",
-            vehicleNumber: d.vehicleNumber || "알 수 없음",
-            startDate: d.startDate ? d.startDate.replace("T", " ").slice(0, 16) : "",
-            endDate: d.endDate ? d.endDate.replace("T", " ").slice(0, 16) : "",
-            startLocation: d.startLocation || "알 수 없음",
-            endLocation: d.endLocation || "알 수 없음",
-            isStart: d.isStart,
-            status: d.status as "READY" | "DRIVING" | "COMPLETED" | undefined,
-          }))
-        );
-        setTotalElements(Number.isNaN(Number(data.data?.totalElements)) ? 0 : Number(data.data?.totalElements));
-      } catch (e) {
-        setError('운행 목록을 불러오지 못했습니다.');
-        console.error("운행 목록 에러(등록 후):", e);
-      }
-    };
-    fetchDrives();
+    alert(message); // 서버에서 받은 성공 메시지 표시
+    fetchDrives(0); // 등록 성공 시 0페이지로 이동
   };
 
   const formatDate = (dateString: string) => {
@@ -204,25 +195,35 @@ const DriveListPage: React.FC = () => {
               </button>
             )} />
 
-            <div className="mt-8 flex justify-center">
-              <nav className="flex items-center">
-                <button className="px-3 py-1 rounded-md mr-1 text-gray-500 hover:bg-gray-100 !rounded-button whitespace-nowrap cursor-pointer">
-                  <i className="fas fa-chevron-left"></i>
-                </button>
-                <button className="px-3 py-1 rounded-md mx-1 bg-green-500 text-white !rounded-button whitespace-nowrap cursor-pointer">
-                  1
-                </button>
-                <button className="px-3 py-1 rounded-md mx-1 text-gray-700 hover:bg-gray-100 !rounded-button whitespace-nowrap cursor-pointer">
-                  2
-                </button>
-                <button className="px-3 py-1 rounded-md mx-1 text-gray-700 hover:bg-gray-100 !rounded-button whitespace-nowrap cursor-pointer">
-                  3
-                </button>
-                <button className="px-3 py-1 rounded-md ml-1 text-gray-500 hover:bg-gray-100 !rounded-button whitespace-nowrap cursor-pointer">
-                  <i className="fas fa-chevron-right"></i>
-                </button>
-              </nav>
-            </div>
+            {totalPages > 1 && (
+              <div className="mt-8 flex justify-center">
+                <nav className="flex items-center">
+                  <button
+                    onClick={() => handlePageChange(currentPage - 1)}
+                    disabled={currentPage === 0}
+                    className="px-3 py-1 rounded-md mr-1 text-gray-500 hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed !rounded-button whitespace-nowrap cursor-pointer"
+                  >
+                    <i className="fas fa-chevron-left"></i>
+                  </button>
+                  {Array.from({ length: totalPages }, (_, i) => (
+                    <button
+                      key={i}
+                      onClick={() => handlePageChange(i)}
+                      className={`px-3 py-1 rounded-md mx-1 ${currentPage === i ? 'bg-green-500 text-white' : 'text-gray-700 hover:bg-gray-100'} !rounded-button whitespace-nowrap cursor-pointer`}
+                    >
+                      {i + 1}
+                    </button>
+                  ))}
+                  <button
+                    onClick={() => handlePageChange(currentPage + 1)}
+                    disabled={currentPage === totalPages - 1}
+                    className="px-3 py-1 rounded-md ml-1 text-gray-500 hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed !rounded-button whitespace-nowrap cursor-pointer"
+                  >
+                    <i className="fas fa-chevron-right"></i>
+                  </button>
+                </nav>
+              </div>
+            )}
           </div>
         </div>
       </div>

@@ -32,7 +32,13 @@ interface KakaoMapProps {
 
 const KAKAO_MAP_APP_KEY = process.env.REACT_APP_KAKAO_MAP_APP_KEY;
 
-const KakaoMap: React.FC<KakaoMapProps> = ({ vehiclePaths, vehicleMarkers, path, markers, onMapChange, vehicleFocusId, mapCenter, mapLevel, onUserInteraction, programmaticMove = false, resetUserInteracted }) => {
+// deepEqual 함수 추가 (간단 버전)
+function deepEqual(a: any, b: any): boolean {
+  return JSON.stringify(a) === JSON.stringify(b);
+}
+
+// 기존 KakaoMap 함수형 컴포넌트는 _KakaoMap으로 이름 변경
+const _KakaoMap: React.FC<KakaoMapProps> = ({ vehiclePaths, vehicleMarkers, path, markers, onMapChange, vehicleFocusId, mapCenter, mapLevel, onUserInteraction, programmaticMove = false, resetUserInteracted }) => {
   const mapContainer = useRef<HTMLDivElement>(null);
   const mapRef = useRef<any>(null);
   const overlaysRef = useRef<any[]>([]); // 오버레이/폴리라인 추적
@@ -276,5 +282,20 @@ const KakaoMap: React.FC<KakaoMapProps> = ({ vehiclePaths, vehicleMarkers, path,
 
   return <div ref={mapContainer} style={{ width: '100%', height: '1000px', borderRadius: '10px' }} />;
 };
+
+// React.memo로 감싸고, deepEqual로 props 비교
+const KakaoMap = React.memo(_KakaoMap, (prev, next) => {
+  return (
+    deepEqual(prev.vehiclePaths, next.vehiclePaths) &&
+    deepEqual(prev.vehicleMarkers, next.vehicleMarkers) &&
+    deepEqual(prev.path, next.path) &&
+    deepEqual(prev.markers, next.markers) &&
+    prev.vehicleFocusId === next.vehicleFocusId &&
+    JSON.stringify(prev.mapCenter) === JSON.stringify(next.mapCenter) &&
+    prev.mapLevel === next.mapLevel &&
+    prev.programmaticMove === next.programmaticMove &&
+    prev.resetUserInteracted === next.resetUserInteracted
+  );
+});
 
 export default KakaoMap;
