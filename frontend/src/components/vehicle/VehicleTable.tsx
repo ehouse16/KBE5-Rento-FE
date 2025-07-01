@@ -23,9 +23,13 @@ interface VehicleTableProps {
   sortConfig: SortConfig | null;
   setSortConfig: (config: SortConfig) => void;
   fetchVehicles: () => void;
+  fetchAllVehicles: () => void;
+  currentPage: number;
+  setCurrentPage: (page: number) => void;
+  itemsPerPage: number;
 }
 
-const VehicleTable: React.FC<VehicleTableProps> = ({ vehicles, sortConfig, setSortConfig, fetchVehicles }) => {
+const VehicleTable: React.FC<VehicleTableProps> = ({ vehicles, sortConfig, setSortConfig, fetchVehicles, fetchAllVehicles, currentPage, setCurrentPage, itemsPerPage }) => {
   const navigate = useNavigate();
   const [editModalOpen, setEditModalOpen] = useState(false);
   const [selectedVehicle, setSelectedVehicle] = useState<Vehicle | null>(null);
@@ -50,7 +54,12 @@ const VehicleTable: React.FC<VehicleTableProps> = ({ vehicles, sortConfig, setSo
     const res = await axiosInstance.delete(`/api/vehicles/${vehicleId}`);
     if (res.status === 200 || res.status === 204) {
       alert('삭제되었습니다.');
-      fetchVehicles();
+      if (vehicles.length === 1 && currentPage > 1) {
+        setCurrentPage(currentPage - 1);
+      } else {
+        fetchVehicles();
+        fetchAllVehicles();
+      }
     } else {
       alert('삭제 실패');
     }

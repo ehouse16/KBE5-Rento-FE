@@ -29,36 +29,38 @@ const DriveListPage: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [totalElements, setTotalElements] = useState(0);
-  const [statusTab, setStatusTab] = useState<'COMPLETED' | 'DRIVING' | 'READY'>('COMPLETED');
+  const [statusTab, setStatusTab] = useState<'READY' | 'DRIVING' | 'COMPLETED'>('READY');
+  const [readyCount, setReadyCount] = useState(0);
+  const [drivingCount, setDrivingCount] = useState(0);
   const navigate = useNavigate();
 
+  // 운행 목록 및 통계 동기화 함수
+  const fetchDrivesAndStats = async () => {
+    try {
+      const res = await axiosInstance.get("/api/drives");
+      const data = res.data;
+      const drivesArr = Array.isArray(data.data?.content) ? data.data.content.map((d: any) => ({
+        id: d.id,
+        memberName: d.memberName || "알 수 없음",
+        vehicleNumber: d.vehicleNumber || "알 수 없음",
+        startDate: d.startDate ? d.startDate.replace("T", " ").slice(0, 16) : "",
+        endDate: d.endDate ? d.endDate.replace("T", " ").slice(0, 16) : "",
+        startLocation: d.startLocation || "알 수 없음",
+        endLocation: d.endLocation || "알 수 없음",
+        isStart: d.isStart,
+        status: d.status as "READY" | "DRIVING" | "COMPLETED" | undefined,
+      })) : [];
+      setDrives(drivesArr);
+      setTotalElements(Number.isNaN(Number(data.data?.page?.totalElements)) ? 0 : Number(data.data?.page?.totalElements));
+      setReadyCount(drivesArr.filter((d: any) => d.status === 'READY').length);
+      setDrivingCount(drivesArr.filter((d: any) => d.status === 'DRIVING').length);
+    } catch (e) {
+      setError('운행 목록을 불러오지 못했습니다.');
+    }
+  };
+
   useEffect(() => {
-    const fetchDrives = async () => {
-      console.log("운행 목록 useEffect 실행됨");
-      try {
-        const res = await axiosInstance.get("/api/drives");
-        console.log("운행 목록 API 응답:", res.data);
-        const data = res.data;
-        setDrives(
-          (Array.isArray(data.data) ? data.data : []).map((d: any) => ({
-            id: d.id,
-            memberName: d.memberName || "알 수 없음",
-            vehicleNumber: d.vehicleNumber || "알 수 없음",
-            startDate: d.startDate ? d.startDate.replace("T", " ").slice(0, 16) : "",
-            endDate: d.endDate ? d.endDate.replace("T", " ").slice(0, 16) : "",
-            startLocation: d.startLocation || "알 수 없음",
-            endLocation: d.endLocation || "알 수 없음",
-            isStart: d.isStart,
-            status: d.status as "READY" | "DRIVING" | "COMPLETED" | undefined,
-          }))
-        );
-        setTotalElements(Number.isNaN(Number(data.data?.totalElements)) ? 0 : Number(data.data?.totalElements));
-      } catch (e) {
-        setError('운행 목록을 불러오지 못했습니다.');
-        console.error("운행 목록 에러:", e);
-      }
-    };
-    fetchDrives();
+    fetchDrivesAndStats();
   }, []);
 
   const getStatusLabel = (status: 'COMPLETED' | 'DRIVING' | 'READY') => {
@@ -97,33 +99,11 @@ const DriveListPage: React.FC = () => {
 
   console.log("filteredDrives:", filteredDrives);
 
-  const handleRegisterSuccess = () => {
+  // 운행 등록 성공 시 목록+통계 새로고침
+  const handleRegisterSuccess = (message: string) => {
+    alert(message || "운행이 성공적으로 예약되었습니다.");
     setRegisterOpen(false);
-    const fetchDrives = async () => {
-      try {
-        const res = await axiosInstance.get("/api/drives");
-        console.log("운행 목록 API 응답(등록 후):", res.data);
-        const data = res.data;
-        setDrives(
-          (Array.isArray(data.data) ? data.data : []).map((d: any) => ({
-            id: d.id,
-            memberName: d.memberName || "알 수 없음",
-            vehicleNumber: d.vehicleNumber || "알 수 없음",
-            startDate: d.startDate ? d.startDate.replace("T", " ").slice(0, 16) : "",
-            endDate: d.endDate ? d.endDate.replace("T", " ").slice(0, 16) : "",
-            startLocation: d.startLocation || "알 수 없음",
-            endLocation: d.endLocation || "알 수 없음",
-            isStart: d.isStart,
-            status: d.status as "READY" | "DRIVING" | "COMPLETED" | undefined,
-          }))
-        );
-        setTotalElements(Number.isNaN(Number(data.data?.totalElements)) ? 0 : Number(data.data?.totalElements));
-      } catch (e) {
-        setError('운행 목록을 불러오지 못했습니다.');
-        console.error("운행 목록 에러(등록 후):", e);
-      }
-    };
-    fetchDrives();
+    fetchDrivesAndStats();
   };
 
   const formatDate = (dateString: string) => {
@@ -152,6 +132,20 @@ const DriveListPage: React.FC = () => {
     navigate(`/realtime-event?driveId=${driveId}`);
   };
 
+  // 운행 취소(삭제) 함수
+  const handleCancelDrive = async (driveId: number) => {
+    if (!window.confirm("정말로 이 운행을 취소하시겠습니까?")) return;
+    try {
+      const res = await axiosInstance.delete(`/api/drives/cancel/${driveId}`);
+      alert(res.data?.message || "운행이 취소되었습니다");
+      await fetchDrivesAndStats();
+    } catch (e) {
+      alert("운행 취소에 실패했습니다.");
+    }
+  };
+
+  const totalPages = Math.max(1, Math.ceil(totalElements / 10)); // 10은 페이지당 표시 개수, 필요시 변수로
+
   return (
     <div className="min-h-screen bg-white flex flex-col">
       <Header />
@@ -159,23 +153,43 @@ const DriveListPage: React.FC = () => {
         <Sidebar activeTab="drives" setActiveTab={() => {}} />
         <div className="flex-1">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-            <div className="flex justify-between items-center mb-8">
-              <h1 className="text-2xl font-bold text-gray-800">운행 예약 목록</h1>
+            {/* 운행 대시보드 카드 */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+              <div className="bg-white p-5 rounded-lg shadow-sm border border-gray-100 flex items-center justify-between">
+                <div>
+                  <p className="text-gray-500 text-sm">운행 전</p>
+                  <h3 className="text-3xl font-bold mt-1">{readyCount}</h3>
+                </div>
+                <div className="bg-blue-100 p-3 rounded-full">
+                  <i className="fas fa-clock text-blue-500"></i>
+                </div>
+              </div>
+              <div className="bg-white p-5 rounded-lg shadow-sm border border-gray-100 flex items-center justify-between">
+                <div>
+                  <p className="text-gray-500 text-sm">운행 중</p>
+                  <h3 className="text-3xl font-bold mt-1">{drivingCount}</h3>
+                </div>
+                <div className="bg-green-100 p-3 rounded-full">
+                  <i className="fas fa-car-side text-green-500"></i>
+                </div>
+              </div>
+            </div>
+            {/* 상태 탭 + 새 예약 버튼 한 줄 정렬 */}
+            <div className="flex justify-between items-center mb-8 gap-4">
+              <div className="flex gap-2">
+                {(['READY', 'DRIVING', 'COMPLETED'] as const).map(tab => (
+                  <button
+                    key={tab}
+                    className={`px-4 py-2 rounded-full font-semibold text-sm ${statusTab === tab ? 'bg-green-500 text-white' : 'bg-gray-200 text-gray-700'}`}
+                    onClick={() => setStatusTab(tab)}
+                  >
+                    {getStatusLabel(tab)}
+                  </button>
+                ))}
+              </div>
               <button className="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded-lg shadow-sm transition-all duration-200 ease-in-out !rounded-button whitespace-nowrap cursor-pointer" onClick={() => setRegisterOpen(true)}>
                 <i className="fas fa-plus mr-2"></i>새 예약
               </button>
-            </div>
-
-            <div className="flex gap-2 mb-6">
-              {(['COMPLETED', 'DRIVING', 'READY'] as const).map(tab => (
-                <button
-                  key={tab}
-                  className={`px-4 py-2 rounded-full font-semibold text-sm ${statusTab === tab ? 'bg-green-500 text-white' : 'bg-gray-200 text-gray-700'}`}
-                  onClick={() => setStatusTab(tab)}
-                >
-                  {getStatusLabel(tab)}
-                </button>
-              ))}
             </div>
 
             <div className="bg-white rounded-lg shadow-sm mb-6 p-4 border border-gray-100">
@@ -196,33 +210,45 @@ const DriveListPage: React.FC = () => {
             </div>
 
             <DriveList drives={filteredDrivesByStatus} renderExtra={(drive) => (
-              <button
-                className="ml-2 px-2 py-1 bg-blue-500 text-white rounded text-xs hover:bg-blue-600"
-                onClick={e => { e.stopPropagation(); handleGoToRealtime(drive.id); }}
-              >
-                관제
-              </button>
+              <>
+                <button
+                  className="ml-2 px-2 py-1 text-blue-500 hover:bg-blue-600 rounded text-xs"
+                  title="관제 이동"
+                  onClick={e => { e.stopPropagation(); handleGoToRealtime(drive.id); }}
+                >
+                  <i className="fas fa-eye"></i>
+                </button>
+                <button
+                  className="ml-2 px-2 py-1 text-red-500 hover:bg-red-600 rounded text-xs"
+                  title="운행 취소"
+                  onClick={e => { e.stopPropagation(); handleCancelDrive(drive.id); }}
+                >
+                  <i className="fas fa-trash"></i>
+                </button>
+              </>
             )} />
 
-            <div className="mt-8 flex justify-center">
-              <nav className="flex items-center">
-                <button className="px-3 py-1 rounded-md mr-1 text-gray-500 hover:bg-gray-100 !rounded-button whitespace-nowrap cursor-pointer">
-                  <i className="fas fa-chevron-left"></i>
-                </button>
-                <button className="px-3 py-1 rounded-md mx-1 bg-green-500 text-white !rounded-button whitespace-nowrap cursor-pointer">
-                  1
-                </button>
-                <button className="px-3 py-1 rounded-md mx-1 text-gray-700 hover:bg-gray-100 !rounded-button whitespace-nowrap cursor-pointer">
-                  2
-                </button>
-                <button className="px-3 py-1 rounded-md mx-1 text-gray-700 hover:bg-gray-100 !rounded-button whitespace-nowrap cursor-pointer">
-                  3
-                </button>
-                <button className="px-3 py-1 rounded-md ml-1 text-gray-500 hover:bg-gray-100 !rounded-button whitespace-nowrap cursor-pointer">
-                  <i className="fas fa-chevron-right"></i>
-                </button>
-              </nav>
-            </div>
+            {totalPages > 1 && (
+              <div className="mt-8 flex justify-center">
+                <nav className="flex items-center">
+                  <button className="px-3 py-1 rounded-md mr-1 text-gray-500 hover:bg-gray-100 !rounded-button whitespace-nowrap cursor-pointer">
+                    <i className="fas fa-chevron-left"></i>
+                  </button>
+                  <button className="px-3 py-1 rounded-md mx-1 bg-green-500 text-white !rounded-button whitespace-nowrap cursor-pointer">
+                    1
+                  </button>
+                  <button className="px-3 py-1 rounded-md mx-1 text-gray-700 hover:bg-gray-100 !rounded-button whitespace-nowrap cursor-pointer">
+                    2
+                  </button>
+                  <button className="px-3 py-1 rounded-md mx-1 text-gray-700 hover:bg-gray-100 !rounded-button whitespace-nowrap cursor-pointer">
+                    3
+                  </button>
+                  <button className="px-3 py-1 rounded-md ml-1 text-gray-500 hover:bg-gray-100 !rounded-button whitespace-nowrap cursor-pointer">
+                    <i className="fas fa-chevron-right"></i>
+                  </button>
+                </nav>
+              </div>
+            )}
           </div>
         </div>
       </div>

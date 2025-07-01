@@ -111,9 +111,10 @@ const VehicleFleetPage: React.FC = () => {
     // eslint-disable-next-line
   }, [search, departmentFilter, onlyFree, currentPage, itemsPerPage]);
 
-  // 차량 등록 성공 시 목록 새로고침
+  // 차량 등록 성공 시 목록 및 통계 새로고침
   const handleAddSuccess = () => {
     fetchVehicles();
+    fetchAllVehicles();
   };
 
   // 전체 차량 리스트 불러오기 (검색/필터와 무관하게)
@@ -126,6 +127,10 @@ const VehicleFleetPage: React.FC = () => {
   useEffect(() => {
     fetchAllVehicles();
   }, []);
+
+  useEffect(() => {
+    console.log('allVehicles.length:', allVehicles.length, 'vehicles.length:', vehicles.length, 'totalElements:', totalElements);
+  }, [allVehicles, vehicles, totalElements]);
 
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col">
@@ -153,6 +158,10 @@ const VehicleFleetPage: React.FC = () => {
             sortConfig={sortConfig}
             setSortConfig={setSortConfig}
             fetchVehicles={fetchVehicles}
+            fetchAllVehicles={fetchAllVehicles}
+            currentPage={currentPage}
+            setCurrentPage={setCurrentPage}
+            itemsPerPage={itemsPerPage}
           />
           <VehiclePagination
             currentPage={isNaN(currentPage) ? 1 : currentPage}

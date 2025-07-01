@@ -131,9 +131,7 @@ const DriveList: React.FC<DriveListProps> = ({ drives, renderExtra }) => {
               {formatTime(drive.startDate)} - {formatTime(drive.endDate)}
             </span>
             <div className="flex items-center gap-2">
-              <button className="text-green-600 hover:text-green-700 text-sm font-medium !rounded-button whitespace-nowrap cursor-pointer">
-                상세 보기 <i className="fas fa-chevron-right ml-1 text-xs"></i>
-              </button>
+              {/* 상세 보기 버튼 제거됨 */}
               {renderExtra && renderExtra(drive)}
             </div>
           </div>

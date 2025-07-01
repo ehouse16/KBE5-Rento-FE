@@ -187,6 +187,22 @@ const UserManagementPage: React.FC = () => {
   // Add state for all users
   const [allUsers, setAllUsers] = useState<Member[]>([]);
 
+  // 전체 사용자 목록(통계용) 불러오기 함수 (useEffect 바깥으로 이동)
+  const fetchAllUsers = async () => {
+    try {
+      const res = await getMembers({ page: 0, size: 10000 }); // large size to get all
+      setAllUsers(Array.isArray(res.data?.content) ? res.data.content : []);
+    } catch {
+      setAllUsers([]);
+    }
+  };
+
+  // Fetch all users (no filters) once on mount or when companyCode changes
+  useEffect(() => {
+    if (!companyCode) return;
+    fetchAllUsers();
+  }, [companyCode]);
+
   // 초기 데이터 로드
   useEffect(() => {
     const loadInitialData = async () => {
@@ -210,41 +226,29 @@ const UserManagementPage: React.FC = () => {
     loadInitialData();
   }, []);
 
-  // Fetch all users (no filters) once on mount or when companyCode changes
-  useEffect(() => {
-    if (!companyCode) return;
-    const fetchAllUsers = async () => {
-      try {
-        const res = await getMembers({ page: 0, size: 10000 }); // large size to get all
-        setAllUsers(Array.isArray(res.data?.content) ? res.data.content : []);
-      } catch {
-        setAllUsers([]);
-      }
-    };
-    fetchAllUsers();
-  }, [companyCode]);
+  // 사용자 목록 및 페이징 데이터 로드 함수 (useEffect 바깥으로 이동)
+  const fetchPagedUsers = async () => {
+    try {
+      const res = await getMembers({
+        position: userPositionFilter !== '전체' ? userPositionFilter : undefined,
+        departmentId: userDepartmentFilter !== '전체' && departments.length > 0
+          ? departments.find(d => d.departmentName === userDepartmentFilter)?.departmentId
+          : undefined,
+        keyword: userSearch || undefined,
+        page: currentPage - 1,
+        size: itemsPerPage
+      });
+      setUsers(Array.isArray(res.data?.content) ? res.data.content : []);
+      setTotalElements(Number.isNaN(Number(res.data?.page?.totalElements)) ? 0 : Number(res.data?.page?.totalElements));
+    } catch (e) {
+      setUsers([]);
+      setTotalElements(0);
+    }
+  };
 
   // 사용자 목록 및 페이징 데이터 로드
   useEffect(() => {
     if (!companyCode) return;
-    const fetchPagedUsers = async () => {
-      try {
-        const res = await getMembers({
-          position: userPositionFilter !== '전체' ? userPositionFilter : undefined,
-          departmentId: userDepartmentFilter !== '전체' && departments.length > 0
-            ? departments.find(d => d.departmentName === userDepartmentFilter)?.departmentId
-            : undefined,
-          keyword: userSearch || undefined,
-          page: currentPage - 1,
-          size: itemsPerPage
-        });
-        setUsers(Array.isArray(res.data?.content) ? res.data.content : []);
-        setTotalElements(Number.isNaN(Number(res.data?.page?.totalElements)) ? 0 : Number(res.data?.page?.totalElements));
-      } catch (e) {
-        setUsers([]);
-        setTotalElements(0);
-      }
-    };
     fetchPagedUsers();
   }, [companyCode, currentPage, itemsPerPage, userDepartmentFilter, userPositionFilter, userSearch, departments]);
 
@@ -494,6 +498,7 @@ const UserManagementPage: React.FC = () => {
       }
       setShowUserModal(false);
       setError(null);
+      fetchAllUsers();
     } catch (error) {
       const errorMessage = handleApiError(error);
       setError(errorMessage);
@@ -541,7 +546,13 @@ const UserManagementPage: React.FC = () => {
     if (window.confirm('정말로 이 사용자를 삭제하시겠습니까?')) {
       try {
         await deleteMember(id);
-        setUsers(users.filter(user => user.id !== id));
+        // 삭제 후 현재 페이지의 사용자 수가 1개(즉, 삭제하면 0개)이고, 현재 페이지가 1보다 크면 한 페이지 앞으로 이동
+        if (users.length === 1 && currentPage > 1) {
+          setCurrentPage(currentPage - 1);
+        } else {
+          fetchPagedUsers();
+        }
+        fetchAllUsers();
         setError(null);
       } catch (error) {
         const errorMessage = handleApiError(error);

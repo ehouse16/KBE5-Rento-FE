@@ -48,11 +48,7 @@ const VehiclePagination: React.FC<VehiclePaginationProps> = ({ currentPage, tota
         </button>
       </div>
       <div className="hidden sm:flex-1 sm:flex sm:items-center sm:justify-between">
-        <div>
-          <p className="text-sm text-gray-700">
-            전체 <span className="font-medium">{safeTotalPages * itemsPerPage}</span> 개 중 <span className="font-medium">{(currentPage - 1) * itemsPerPage + 1}</span>-<span className="font-medium">{Math.min(currentPage * itemsPerPage, safeTotalPages * itemsPerPage)}</span> 표시
-          </p>
-        </div>
+        <div></div>
         <div>
           <div className="flex items-center">
             <span className="mr-2 text-sm text-gray-700">페이지당 표시:</span>
@@ -84,7 +80,7 @@ const VehiclePagination: React.FC<VehiclePaginationProps> = ({ currentPage, tota
             <button
               onClick={() => setCurrentPage(currentPage < safeTotalPages ? currentPage + 1 : safeTotalPages)}
               disabled={currentPage === safeTotalPages}
-              className={`relative inline-flex items-center px-2 py-2 rounded-r-md border border-gray-300 ${currentPage === safeTotalPages ? 'bg-gray-100 text-gray-400 cursor-not-allowed' : 'bg-white text-gray-500 hover:bg-gray-50'} cursor-pointer whitespace-nowrap !rounded-button`}
+              className={`relative inline-flex items-center px-2 py-2 rounded-r-md border border-gray-300 ${safeTotalPages === currentPage ? 'bg-gray-100 text-gray-400 cursor-not-allowed' : 'bg-white text-gray-500 hover:bg-gray-50'} cursor-pointer whitespace-nowrap !rounded-button`}
             >
               <span className="sr-only">다음</span>
               <i className="fas fa-chevron-right text-xs"></i>
