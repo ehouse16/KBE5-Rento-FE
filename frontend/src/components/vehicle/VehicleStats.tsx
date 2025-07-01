@@ -10,10 +10,11 @@ interface Vehicle {
 
 interface VehicleStatsProps {
   vehicles: Vehicle[];
+  totalElements: number;
 }
 
-const VehicleStats: React.FC<VehicleStatsProps> = ({ vehicles }) => {
-  const total = vehicles.length;
+const VehicleStats: React.FC<VehicleStatsProps> = ({ vehicles, totalElements }) => {
+  const total = totalElements;
   const available = vehicles.filter((v: Vehicle) => v.status === 'READY').length;
   const inUse = vehicles.filter((v: Vehicle) => v.status === 'RESERVATION').length;
   return (

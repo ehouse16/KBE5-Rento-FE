@@ -489,8 +489,30 @@ const UserManagementPage: React.FC = () => {
           companyCode: companyCode
         };
         await registerMember(registerRequest);
-        const updatedUsers = await getMembers();
-        setUsers(updatedUsers.data?.content || []);
+        // 새로 등록 후 전체 개수로 마지막 페이지 계산
+        const res = await getMembers({
+          position: userPositionFilter !== '전체' ? userPositionFilter : undefined,
+          departmentId: userDepartmentFilter !== '전체' && departments.length > 0
+            ? departments.find(d => d.departmentName === userDepartmentFilter)?.departmentId
+            : undefined,
+          keyword: userSearch || undefined,
+          page: 0,
+          size: 10000
+        });
+        const total = Array.isArray(res.data?.content) ? res.data.content.length : 0;
+        const lastPage = Math.max(1, Math.ceil(total / itemsPerPage));
+        setCurrentPage(lastPage);
+        // 마지막 페이지 데이터만 다시 불러오기
+        const pagedRes = await getMembers({
+          position: userPositionFilter !== '전체' ? userPositionFilter : undefined,
+          departmentId: userDepartmentFilter !== '전체' && departments.length > 0
+            ? departments.find(d => d.departmentName === userDepartmentFilter)?.departmentId
+            : undefined,
+          keyword: userSearch || undefined,
+          page: lastPage - 1,
+          size: itemsPerPage
+        });
+        setUsers(Array.isArray(pagedRes.data?.content) ? pagedRes.data.content : []);
       }
       setShowUserModal(false);
       setError(null);
@@ -737,6 +759,7 @@ const UserManagementPage: React.FC = () => {
                 setCurrentPage={setCurrentPage}
                 itemsPerPage={itemsPerPage}
                 setItemsPerPage={setItemsPerPage}
+                totalElements={totalElements}
               />
             </div>
           </>

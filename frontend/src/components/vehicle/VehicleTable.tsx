@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import VehicleEditModal from './VehicleEditModal';
 import axiosInstance from '../../utils/axios';
@@ -116,11 +116,7 @@ const VehicleTable: React.FC<VehicleTableProps> = ({ vehicles, sortConfig, setSo
                     <div className="text-sm text-gray-900">{vehicle.modelName}</div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="text-sm text-gray-900">
-                      {vehicle.totalDistanceKm !== undefined && vehicle.totalDistanceKm !== null
-                        ? `${Number(vehicle.totalDistanceKm / 1000).toLocaleString(undefined, { maximumFractionDigits: 1 })} km`
-                        : '-'}
-                    </div>
+                    <div className="text-sm text-gray-900">{vehicle.totalDistanceKm?.toLocaleString?.() ?? '-'}</div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
                     {vehicle.status === 'READY' ? (

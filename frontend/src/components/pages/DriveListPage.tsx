@@ -5,7 +5,7 @@ import Sidebar from "../Sidebar";
 import DriveList from "../drive/DriveList";
 import DriveRegisterModal from "../drive/DriveRegisterModal";
 import axiosInstance from '../../utils/axios';
-import { useNavigate } from 'react-router-dom';
+import VehiclePagination from '../vehicle/VehiclePagination';
 
 // DriveListPage 내부에서 사용할 간소화된 Drive 인터페이스 정의
 interface Drive {
@@ -30,50 +30,37 @@ const DriveListPage: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [totalElements, setTotalElements] = useState(0);
   const [statusTab, setStatusTab] = useState<'COMPLETED' | 'DRIVING' | 'READY'>('COMPLETED');
-  const [currentPage, setCurrentPage] = useState(0);
-  const [totalPages, setTotalPages] = useState(0);
-  const navigate = useNavigate();
-
-  const fetchDrives = async (page = 0) => {
-    setLoading(true);
-    try {
-      // API 호출 시 페이지 번호와 정렬, 검색 조건 등을 파라미터로 전달해야 합니다. (백엔드 구현에 따라 달라짐)
-      const res = await axiosInstance.get(`/api/drives?page=${page}`);
-      const pageData = res.data.data || {}; // API 응답 구조에 따라 조정
-
-      setDrives(
-        (Array.isArray(pageData.content) ? pageData.content : []).map((d: any) => ({
-          id: d.id,
-          memberName: d.memberName || "알 수 없음",
-          vehicleNumber: d.vehicleNumber || "알 수 없음",
-          startDate: d.startDate ? d.startDate.replace("T", " ").slice(0, 16) : "",
-          endDate: d.endDate ? d.endDate.replace("T", " ").slice(0, 16) : "",
-          startLocation: d.startLocation || "알 수 없음",
-          endLocation: d.endLocation || "알 수 없음",
-          isStart: d.isStart,
-          status: d.status as "READY" | "DRIVING" | "COMPLETED" | undefined,
-        }))
-      );
-      setTotalElements(pageData.totalElements || 0);
-      setTotalPages(pageData.totalPages || 0);
-      setCurrentPage(pageData.number || 0);
-    } catch (e) {
-      setError('운행 목록을 불러오지 못했습니다.');
-      console.error("운행 목록 에러:", e);
-    } finally {
-      setLoading(false);
-    }
-  };
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage, setItemsPerPage] = useState(5);
 
   useEffect(() => {
-    fetchDrives(currentPage);
-  }, [currentPage]);
-
-  const handlePageChange = (page: number) => {
-    if (page >= 0 && page < totalPages) {
-      setCurrentPage(page);
-    }
-  };
+    const fetchDrives = async () => {
+      console.log("운행 목록 useEffect 실행됨");
+      try {
+        const res = await axiosInstance.get("/api/drives");
+        console.log("운행 목록 API 응답:", res.data);
+        const data = res.data;
+        setDrives(
+          (Array.isArray(data.data) ? data.data : []).map((d: any) => ({
+            id: d.id,
+            memberName: d.memberName || "알 수 없음",
+            vehicleNumber: d.vehicleNumber || "알 수 없음",
+            startDate: d.startDate ? d.startDate.replace("T", " ").slice(0, 16) : "",
+            endDate: d.endDate ? d.endDate.replace("T", " ").slice(0, 16) : "",
+            startLocation: d.startLocation || "알 수 없음",
+            endLocation: d.endLocation || "알 수 없음",
+            isStart: d.isStart,
+            status: d.status as "READY" | "DRIVING" | "COMPLETED" | undefined,
+          }))
+        );
+        setTotalElements(Number.isNaN(Number(data.data?.totalElements)) ? 0 : Number(data.data?.totalElements));
+      } catch (e) {
+        setError('운행 목록을 불러오지 못했습니다.');
+        console.error("운행 목록 에러:", e);
+      }
+    };
+    fetchDrives();
+  }, []);
 
   const getStatusLabel = (status: 'COMPLETED' | 'DRIVING' | 'READY') => {
     switch (status) {
@@ -90,6 +77,8 @@ const DriveListPage: React.FC = () => {
     if (statusTab === 'READY') return d.status === 'READY';
     return true;
   });
+
+  const paginatedDrives = filteredDrivesByStatus.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
 
   const filteredDrives = drives
     .filter((d) =>
@@ -111,10 +100,34 @@ const DriveListPage: React.FC = () => {
 
   console.log("filteredDrives:", filteredDrives);
 
-  const handleRegisterSuccess = (message: string) => {
+  const handleRegisterSuccess = () => {
     setRegisterOpen(false);
-    alert(message); // 서버에서 받은 성공 메시지 표시
-    fetchDrives(0); // 등록 성공 시 0페이지로 이동
+    setStatusTab('READY');
+    const fetchDrives = async () => {
+      try {
+        const res = await axiosInstance.get("/api/drives");
+        console.log("운행 목록 API 응답(등록 후):", res.data);
+        const data = res.data;
+        setDrives(
+          (Array.isArray(data.data) ? data.data : []).map((d: any) => ({
+            id: d.id,
+            memberName: d.memberName || "알 수 없음",
+            vehicleNumber: d.vehicleNumber || "알 수 없음",
+            startDate: d.startDate ? d.startDate.replace("T", " ").slice(0, 16) : "",
+            endDate: d.endDate ? d.endDate.replace("T", " ").slice(0, 16) : "",
+            startLocation: d.startLocation || "알 수 없음",
+            endLocation: d.endLocation || "알 수 없음",
+            isStart: d.isStart,
+            status: d.status as "READY" | "DRIVING" | "COMPLETED" | undefined,
+          }))
+        );
+        setTotalElements(Number.isNaN(Number(data.data?.totalElements)) ? 0 : Number(data.data?.totalElements));
+      } catch (e) {
+        setError('운행 목록을 불러오지 못했습니다.');
+        console.error("운행 목록 에러(등록 후):", e);
+      }
+    };
+    fetchDrives();
   };
 
   const formatDate = (dateString: string) => {
@@ -137,11 +150,6 @@ const DriveListPage: React.FC = () => {
   };
 
   console.log("DriveList drives props:", drives);
-
-  // 관제 이동 핸들러
-  const handleGoToRealtime = (driveId: number) => {
-    navigate(`/realtime-event?driveId=${driveId}`);
-  };
 
   return (
     <div className="min-h-screen bg-white flex flex-col">
@@ -186,44 +194,18 @@ const DriveListPage: React.FC = () => {
               </div>
             </div>
 
-            <DriveList drives={filteredDrivesByStatus} renderExtra={(drive) => (
-              <button
-                className="ml-2 px-2 py-1 bg-blue-500 text-white rounded text-xs hover:bg-blue-600"
-                onClick={e => { e.stopPropagation(); handleGoToRealtime(drive.id); }}
-              >
-                관제
-              </button>
-            )} />
+            <DriveList drives={paginatedDrives} />
 
-            {totalPages > 1 && (
-              <div className="mt-8 flex justify-center">
-                <nav className="flex items-center">
-                  <button
-                    onClick={() => handlePageChange(currentPage - 1)}
-                    disabled={currentPage === 0}
-                    className="px-3 py-1 rounded-md mr-1 text-gray-500 hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed !rounded-button whitespace-nowrap cursor-pointer"
-                  >
-                    <i className="fas fa-chevron-left"></i>
-                  </button>
-                  {Array.from({ length: totalPages }, (_, i) => (
-                    <button
-                      key={i}
-                      onClick={() => handlePageChange(i)}
-                      className={`px-3 py-1 rounded-md mx-1 ${currentPage === i ? 'bg-green-500 text-white' : 'text-gray-700 hover:bg-gray-100'} !rounded-button whitespace-nowrap cursor-pointer`}
-                    >
-                      {i + 1}
-                    </button>
-                  ))}
-                  <button
-                    onClick={() => handlePageChange(currentPage + 1)}
-                    disabled={currentPage === totalPages - 1}
-                    className="px-3 py-1 rounded-md ml-1 text-gray-500 hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed !rounded-button whitespace-nowrap cursor-pointer"
-                  >
-                    <i className="fas fa-chevron-right"></i>
-                  </button>
-                </nav>
-              </div>
-            )}
+            <div className="mt-4">
+              <VehiclePagination
+                currentPage={currentPage}
+                totalPages={Math.max(1, Math.ceil(filteredDrivesByStatus.length / itemsPerPage))}
+                setCurrentPage={setCurrentPage}
+                itemsPerPage={itemsPerPage}
+                setItemsPerPage={setItemsPerPage}
+                totalElements={filteredDrivesByStatus.length}
+              />
+            </div>
           </div>
         </div>
       </div>

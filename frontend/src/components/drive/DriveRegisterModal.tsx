@@ -32,7 +32,7 @@ const DRIVE_TYPE_OPTIONS = [
 interface DriveRegisterModalProps {
   open: boolean;
   onClose: () => void;
-  onSuccess: (message: string) => void;
+  onSuccess: () => void;
   selectedVehicleId?: string;
 }
 
@@ -76,7 +76,7 @@ const DriveRegisterModal: React.FC<DriveRegisterModalProps> = ({ open, onClose, 
       }
       axiosInstance.get(`/api/members?companyCode=${companyCode}`)
         .then(res => setMembers(res.data.data?.content || []));
-      axiosInstance.get("/api/vehicles")
+      axiosInstance.get("/api/vehicles?onlyFree=true")
         .then(res => {
           setVehicles(res.data.data?.content || []);
         });
@@ -162,8 +162,7 @@ const DriveRegisterModal: React.FC<DriveRegisterModalProps> = ({ open, onClose, 
       };
       console.log("payload", payload);
       const res = await axiosInstance.post("/api/drives", payload);
-      const successMessage = res.data?.message || "운행이 성공적으로 예약되었습니다.";
-      onSuccess(successMessage);
+      onSuccess();
       onClose();
     } catch (err: any) {
       const msg = err?.response?.data?.message || err?.response?.data?.error || "운행 예약 등록에 실패했습니다.";

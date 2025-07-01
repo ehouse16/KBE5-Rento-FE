@@ -6,9 +6,10 @@ interface VehiclePaginationProps {
   setCurrentPage: (page: number) => void;
   itemsPerPage: number;
   setItemsPerPage: (count: number) => void;
+  totalElements: number;
 }
 
-const VehiclePagination: React.FC<VehiclePaginationProps> = ({ currentPage, totalPages, setCurrentPage, itemsPerPage, setItemsPerPage }) => {
+const VehiclePagination: React.FC<VehiclePaginationProps> = ({ currentPage, totalPages, setCurrentPage, itemsPerPage, setItemsPerPage, totalElements }) => {
   // totalPages가 0 이하일 경우 1로 설정
   const safeTotalPages = Math.max(1, totalPages);
   
@@ -50,7 +51,7 @@ const VehiclePagination: React.FC<VehiclePaginationProps> = ({ currentPage, tota
       <div className="hidden sm:flex-1 sm:flex sm:items-center sm:justify-between">
         <div>
           <p className="text-sm text-gray-700">
-            전체 <span className="font-medium">{safeTotalPages * itemsPerPage}</span> 개 중 <span className="font-medium">{(currentPage - 1) * itemsPerPage + 1}</span>-<span className="font-medium">{Math.min(currentPage * itemsPerPage, safeTotalPages * itemsPerPage)}</span> 표시
+            전체 <span className="font-medium">{totalElements}</span> 개 중 <span className="font-medium">{(currentPage - 1) * itemsPerPage + 1}</span>-<span className="font-medium">{Math.min(currentPage * itemsPerPage, totalElements)}</span> 표시
           </p>
         </div>
         <div>
