@@ -646,7 +646,7 @@ const UserManagementPage: React.FC = () => {
         {activeTab === 'users' && (
           <>
             {/* 사용자 통계 */}
-            <UserStats users={allUsers.filter(u => !u.delete)} departments={departments} positions={positions} />
+            <UserStats users={allUsers} departments={departments} positions={positions} />
             {/* VehicleFilter 스타일의 필터 카드 */}
             <div className="w-full bg-white p-4 rounded-lg shadow-sm mb-6 flex flex-col md:flex-row flex-wrap md:items-end gap-4">
               <div className="flex-1 min-w-[180px] w-full md:w-auto">
@@ -705,7 +705,6 @@ const UserManagementPage: React.FC = () => {
                   </thead>
                   <tbody className="bg-white divide-y divide-gray-200">
                     {users
-                      .filter(user => !user.delete)
                       .filter(user => userDepartmentFilter === '전체' || user.departmentName === userDepartmentFilter)
                       .filter(user => userPositionFilter === '전체' || user.position === userPositionFilter)
                       .filter(user =>
