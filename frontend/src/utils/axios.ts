@@ -57,39 +57,58 @@ axiosInstance.interceptors.response.use(
     
     const originalRequest = error.config;
 
-    if (error.response?.status === 401 && !originalRequest._retry) {
+    if ((error.response?.status === 401 || error.response?.status === 403) && !originalRequest._retry) {
+      const errorMessage = error.response?.data?.message;
       originalRequest._retry = true;
 
-      try {
-        const refreshToken = localStorage.getItem('refreshToken');
-        if (!refreshToken) {
-          throw new Error('No refresh token available');
-        }
+      if (errorMessage === '액세스 토큰이 만료되었습니다.') {
+        try {
+          const refreshToken = localStorage.getItem('refreshToken');
+          if (!refreshToken) throw new Error('No refresh token available');
 
-        const response = await axios.post(
-          `${API_URL}/api/tokens/refresh`,
-          null,
-          {
-            headers: { 'RefreshToken': refreshToken },
-            withCredentials: false
+          const response = await axios.post(
+            `${API_URL}api/tokens/refresh`,
+            null,
+            {
+              headers: { 'RefreshToken': refreshToken },
+              withCredentials: false
+            }
+          );
+
+          const newAccessToken = response.headers['accesstoken'];
+          const newRefreshToken = response.headers['refreshtoken'];
+
+          if (newAccessToken && newRefreshToken) {
+            localStorage.setItem('accessToken', newAccessToken);
+            localStorage.setItem('refreshToken', newRefreshToken);
+
+            originalRequest.headers['AccessToken'] = newAccessToken;
+            originalRequest.headers['RefreshToken'] = newRefreshToken;
+
+            console.log('🔑 originalRequest AccessToken:', originalRequest.headers['AccessToken']);
+            console.log('♻️ originalRequest RefreshToken:', originalRequest.headers['RefreshToken']);
+            return axiosInstance(originalRequest);
+          } else {
+            throw new Error('New tokens not found in response');
           }
-        );
+        } catch (refreshError: any) {
+          const status = refreshError?.response?.status;
+          const msg = refreshError?.response?.data?.message;
 
-        const newAccessToken = response.headers['accesstoken'];
-        const newRefreshToken = response.headers['refreshtoken'];
+          if (status === 401 || status === 403 || msg === '리프레시 토큰이 만료되었습니다.') {
+            alert('로그인이 만료되었습니다. 다시 로그인해주세요.');
+            localStorage.removeItem('accessToken');
+            localStorage.removeItem('refreshToken');
+            window.location.href = '/manager-login';
+          }
 
-        if (newAccessToken && newRefreshToken) {
-          localStorage.setItem('accessToken', newAccessToken);
-          localStorage.setItem('refreshToken', newRefreshToken);
-
-          originalRequest.headers['AccessToken'] = newAccessToken;
-          originalRequest.headers['RefreshToken'] = newRefreshToken;
-          return axiosInstance(originalRequest);
+          return Promise.reject(refreshError);
         }
-      } catch (refreshError) {
-        console.error('Token refresh failed:', refreshError);
+      } else if (errorMessage === '리프레시 토큰이 만료되었습니다.') {
+        alert('로그인이 만료되었습니다. 다시 로그인해주세요.');
         localStorage.removeItem('accessToken');
         localStorage.removeItem('refreshToken');
+        window.location.href = '/manager-login';
       }
     }
 
