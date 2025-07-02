@@ -491,6 +491,7 @@ const UserManagementPage: React.FC = () => {
           companyCode: companyCode
         };
         await registerMember(registerRequest);
+        alert('사용자가 성공적으로 등록되었습니다.');
       }
       setShowUserModal(false);
       setError(null);

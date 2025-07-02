@@ -77,7 +77,7 @@ const ManagerLoginPage: React.FC = () => {
 
       navigate('/dashboard');
     } catch (error) {
-      setError('로그인에 실패했습니다.');
+      setError('아이디 또는 비밀번호가 올바르지 않습니다.');
       console.error('Login error:', error);
     } finally {
       setLoading(false);
