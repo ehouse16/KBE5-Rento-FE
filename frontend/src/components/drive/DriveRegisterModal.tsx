@@ -38,6 +38,36 @@ interface DriveRegisterModalProps {
 
 const CURRENT_YEAR = new Date().getFullYear();
 
+const getToday = () => {
+  const today = new Date();
+  const yyyy = today.getFullYear();
+  const mm = String(today.getMonth() + 1).padStart(2, '0');
+  const dd = String(today.getDate()).padStart(2, '0');
+  return { yyyy, mm, dd, ymd: `${yyyy}-${mm}-${dd}` };
+};
+
+// 현재 시간 관련 변수 (useState 위에서 선언)
+const now = new Date();
+const nowHour = now.getHours();
+const nowMinute = now.getMinutes();
+const nowAmPm = nowHour < 12 ? 'AM' : 'PM';
+const now12Hour = nowHour % 12 === 0 ? 12 : nowHour % 12;
+
+// 도착일시 한 시간 뒤 제한용
+const nextHour = (nowHour + 1) % 24;
+const nextAmPm = nextHour < 12 ? 'AM' : 'PM';
+const next12Hour = nextHour % 12 === 0 ? 12 : nextHour % 12;
+
+// 오전/오후 시간 배열 생성
+const AM_HOURS = Array.from({ length: 12 }, (_, i) => i); // 00~11
+const PM_HOURS = Array.from({ length: 12 }, (_, i) => i + 12); // 12~23
+
+// 출발일시 초기값: 현재 분이 0이 아니면 +1시간(시만 반영)
+const initialHour = nowMinute === 0 ? nowHour : (nowHour + 1) % 24;
+const initialAmPm = initialHour < 12 ? 'AM' : 'PM';
+const initialEndHour = (initialHour + 1) % 24;
+const initialEndAmPm = initialEndHour < 12 ? 'AM' : 'PM';
+
 const DriveRegisterModal: React.FC<DriveRegisterModalProps> = ({ open, onClose, onSuccess, selectedVehicleId }) => {
   const [members, setMembers] = useState<Member[]>([]);
   const [vehicles, setVehicles] = useState<Vehicle[]>([]);
@@ -59,12 +89,14 @@ const DriveRegisterModal: React.FC<DriveRegisterModalProps> = ({ open, onClose, 
     endDateTime: false,
   });
   const [loading, setLoading] = useState(false);
-  const [startMonthDay, setStartMonthDay] = useState("");
-  const [startHour, setStartHour] = useState<string | null>(null);
-  const [endMonthDay, setEndMonthDay] = useState("");
-  const [endHour, setEndHour] = useState<string | null>(null);
-  const [amPm, setAmPm] = useState<'AM' | 'PM'>('AM');
-  const [amPmEnd, setAmPmEnd] = useState<'AM' | 'PM'>('AM');
+  const [today] = useState(getToday());
+  const [startMonthDay, setStartMonthDay] = useState(`${today.mm}-${today.dd}`);
+  const [amPm, setAmPm] = useState<'AM' | 'PM'>(initialAmPm);
+  const [startHour, setStartHour] = useState<string | null>(initialHour.toString().padStart(2, '0'));
+  const [endMonthDay, setEndMonthDay] = useState(`${today.mm}-${today.dd}`);
+  const [amPmEnd, setAmPmEnd] = useState<'AM' | 'PM'>(initialEndAmPm);
+  const [endHour, setEndHour] = useState<string | null>(initialEndHour.toString().padStart(2, '0'));
+  const [endTimeManuallySet, setEndTimeManuallySet] = useState(false);
 
   useEffect(() => {
     if (open) {
@@ -80,6 +112,30 @@ const DriveRegisterModal: React.FC<DriveRegisterModalProps> = ({ open, onClose, 
         .then(res => {
           setVehicles(res.data.data?.content || []);
         });
+      setFormData({
+        memberId: "",
+        vehicleId: "",
+        driveType: "BUSINESS",
+        startLocation: "",
+        endLocation: "",
+        startDateTime: "",
+        endDateTime: "",
+      });
+      setErrors({
+        memberId: false,
+        vehicleId: false,
+        startLocation: false,
+        endLocation: false,
+        startDateTime: false,
+        endDateTime: false,
+      });
+      setStartMonthDay(`${today.mm}-${today.dd}`);
+      setEndMonthDay(`${today.mm}-${today.dd}`);
+      setAmPm(initialAmPm);
+      setStartHour(initialHour.toString().padStart(2, '0'));
+      setAmPmEnd(initialEndAmPm);
+      setEndHour(initialEndHour.toString().padStart(2, '0'));
+      setEndTimeManuallySet(false);
     }
   }, [open, onClose]);
 
@@ -121,10 +177,47 @@ const DriveRegisterModal: React.FC<DriveRegisterModalProps> = ({ open, onClose, 
     }
   }, [endMonthDay, endHour, amPmEnd]);
 
+  // 출발일시 변경 시 도착일시를 +1시간으로 자동 세팅
+  useEffect(() => {
+    if (!startMonthDay || !amPm || !startHour || endTimeManuallySet) return;
+    const [mm, dd] = startMonthDay.split('-').map(Number);
+    let hour24 = Number(startHour);
+    const startDate = new Date(CURRENT_YEAR, mm - 1, dd, hour24);
+    // 출발이 23시라면 도착은 다음날 00시
+    if (hour24 === 23) {
+      const nextDate = new Date(startDate);
+      nextDate.setDate(nextDate.getDate() + 1);
+      const endMm = String(nextDate.getMonth() + 1).padStart(2, '0');
+      const endDd = String(nextDate.getDate()).padStart(2, '0');
+      setEndMonthDay(`${endMm}-${endDd}`);
+      setAmPmEnd('AM');
+      setEndHour('00');
+      setEndTimeManuallySet(false);
+      return;
+    }
+    // 기본: +1시간
+    startDate.setHours(startDate.getHours() + 1);
+    const endMm = String(startDate.getMonth() + 1).padStart(2, '0');
+    const endDd = String(startDate.getDate()).padStart(2, '0');
+    const endAmPm = startDate.getHours() < 12 ? 'AM' : 'PM';
+    const end24Hour = startDate.getHours();
+    setEndMonthDay(`${endMm}-${endDd}`);
+    setAmPmEnd(endAmPm);
+    setEndHour(end24Hour.toString().padStart(2, '0'));
+    setEndTimeManuallySet(false);
+  }, [startMonthDay, amPm, startHour]);
+
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
     setFormData(f => ({ ...f, [name]: value }));
     setErrors(e => ({ ...e, [name]: false }));
+  };
+
+  // 도착일시를 사용자가 직접 선택하면 플래그 변경
+  const handleEndTimeSelect = (type: 'ampm' | 'hour', value: string) => {
+    setEndTimeManuallySet(true);
+    if (type === 'ampm') setAmPmEnd(value as 'AM' | 'PM');
+    if (type === 'hour') setEndHour(value);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -244,23 +337,37 @@ const DriveRegisterModal: React.FC<DriveRegisterModalProps> = ({ open, onClose, 
                   }}
                   className={`px-3 py-2 border ${errors.startDateTime ? "border-red-500" : "border-gray-300"} rounded-md`}
                   pattern="\\d{4}-\\d{2}-\\d{2}"
+                  min={today.ymd}
                 />
               </div>
               <div className="flex gap-2 mt-2">
-                <button type="button" className={`px-3 py-1 rounded ${amPm === 'AM' ? 'bg-green-500 text-white' : 'bg-gray-100'}`} onClick={() => setAmPm('AM')}>오전</button>
-                <button type="button" className={`px-3 py-1 rounded ${amPm === 'PM' ? 'bg-green-500 text-white' : 'bg-gray-100'}`} onClick={() => setAmPm('PM')}>오후</button>
+                <button type="button" className={`px-3 py-1 rounded ${amPm === 'AM' ? 'bg-green-500 text-white' : 'bg-gray-100'}`} onClick={() => setAmPm('AM')}
+                  disabled={startMonthDay === `${today.mm}-${today.dd}` && nowAmPm === 'PM'}>오전</button>
+                <button type="button" className={`px-3 py-1 rounded ${amPm === 'PM' ? 'bg-green-500 text-white' : 'bg-gray-100'}`} onClick={() => setAmPm('PM')}
+                  disabled={startMonthDay === `${today.mm}-${today.dd}` && nowAmPm === 'AM' && now12Hour === 12}>오후</button>
               </div>
               <div className="flex flex-row flex-wrap gap-1 w-full mt-2">
-                {Array.from({ length: 12 }, (_, i) => (
-                  <button
-                    type="button"
-                    key={i+1}
-                    className={`min-w-[36px] px-1 py-1 rounded text-sm ${startHour === (i+1).toString().padStart(2, "0") ? "bg-green-500 text-white" : "bg-gray-100"}`}
-                    onClick={() => setStartHour((i+1).toString().padStart(2, "0"))}
-                  >
-                    {(i+1).toString().padStart(2, "0")}
-                  </button>
-                ))}
+                {(amPm === 'AM' ? AM_HOURS : PM_HOURS).map(hour => {
+                  let disabled = false;
+                  if (startMonthDay === `${today.mm}-${today.dd}` && amPm === (initialHour < 12 ? 'AM' : 'PM')) {
+                    if (nowMinute === 0) {
+                      if (hour < initialHour) disabled = true;
+                    } else {
+                      if (hour <= nowHour) disabled = true;
+                    }
+                  }
+                  return (
+                    <button
+                      type="button"
+                      key={hour}
+                      className={`min-w-[36px] px-1 py-1 rounded text-sm ${startHour === hour.toString().padStart(2, "0") ? "bg-green-500 text-white" : "bg-gray-100"} ${disabled ? "opacity-40 cursor-not-allowed" : ""}`}
+                      onClick={() => !disabled && setStartHour(hour.toString().padStart(2, "0"))}
+                      disabled={disabled}
+                    >
+                      {hour.toString().padStart(2, "0")}
+                    </button>
+                  );
+                })}
               </div>
               {errors.startDateTime && <p className="text-red-500 text-xs mt-1">출발 일시는 필수 항목입니다.</p>}
             </div>
@@ -276,23 +383,48 @@ const DriveRegisterModal: React.FC<DriveRegisterModalProps> = ({ open, onClose, 
                   }}
                   className={`px-3 py-2 border ${errors.endDateTime ? "border-red-500" : "border-gray-300"} rounded-md`}
                   pattern="\\d{4}-\\d{2}-\\d{2}"
+                  min={today.ymd}
                 />
               </div>
               <div className="flex gap-2 mt-2">
-                <button type="button" className={`px-3 py-1 rounded ${amPmEnd === 'AM' ? 'bg-green-500 text-white' : 'bg-gray-100'}`} onClick={() => setAmPmEnd('AM')}>오전</button>
-                <button type="button" className={`px-3 py-1 rounded ${amPmEnd === 'PM' ? 'bg-green-500 text-white' : 'bg-gray-100'}`} onClick={() => setAmPmEnd('PM')}>오후</button>
+                <button type="button" className={`px-3 py-1 rounded ${amPmEnd === 'AM' ? 'bg-green-500 text-white' : 'bg-gray-100'}`} onClick={() => handleEndTimeSelect('ampm', 'AM')}
+                  disabled={
+                    endMonthDay === startMonthDay &&
+                    ((amPm === 'PM' && amPmEnd === 'AM') ||
+                     (amPm === amPmEnd && amPmEnd === 'AM' && Number(startHour) === 12))
+                  }
+                >오전</button>
+                <button type="button" className={`px-3 py-1 rounded ${amPmEnd === 'PM' ? 'bg-green-500 text-white' : 'bg-gray-100'}`} onClick={() => handleEndTimeSelect('ampm', 'PM')}
+                  disabled={
+                    endMonthDay === startMonthDay &&
+                    (amPm === 'AM' && amPmEnd === 'PM' && Number(startHour) === 12)
+                  }
+                >오후</button>
               </div>
               <div className="flex flex-row flex-wrap gap-1 w-full mt-2">
-                {Array.from({ length: 12 }, (_, i) => (
-                  <button
-                    type="button"
-                    key={i+1}
-                    className={`min-w-[36px] px-1 py-1 rounded text-sm ${endHour === (i+1).toString().padStart(2, "0") ? "bg-green-500 text-white" : "bg-gray-100"}`}
-                    onClick={() => setEndHour((i+1).toString().padStart(2, "0"))}
-                  >
-                    {(i+1).toString().padStart(2, "0")}
-                  </button>
-                ))}
+                {(amPmEnd === 'AM' ? AM_HOURS : PM_HOURS).map(hour => {
+                  let disabled = false;
+                  if (endMonthDay === startMonthDay && amPmEnd === amPm) {
+                    if (Number(startHour) !== null && hour <= Number(startHour)) disabled = true;
+                  } else if (endMonthDay === `${today.mm}-${today.dd}` && amPmEnd === (initialHour < 12 ? 'AM' : 'PM')) {
+                    if (nowMinute === 0) {
+                      if (hour < initialHour + 1) disabled = true;
+                    } else {
+                      if (hour <= nowHour + 1) disabled = true;
+                    }
+                  }
+                  return (
+                    <button
+                      type="button"
+                      key={hour}
+                      className={`min-w-[36px] px-1 py-1 rounded text-sm ${endHour === hour.toString().padStart(2, "0") ? "bg-green-500 text-white" : "bg-gray-100"} ${disabled ? "opacity-40 cursor-not-allowed" : ""}`}
+                      onClick={() => !disabled && handleEndTimeSelect('hour', hour.toString().padStart(2, "0"))}
+                      disabled={disabled}
+                    >
+                      {hour.toString().padStart(2, "0")}
+                    </button>
+                  );
+                })}
               </div>
               {errors.endDateTime && <p className="text-red-500 text-xs mt-1">도착 일시는 필수 항목입니다.</p>}
             </div>
