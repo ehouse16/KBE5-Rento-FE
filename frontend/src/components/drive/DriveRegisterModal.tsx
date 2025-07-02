@@ -109,9 +109,8 @@ const DriveRegisterModal: React.FC<DriveRegisterModalProps> = ({ open, onClose, 
       axiosInstance.get("/api/members?companyCode=" + companyCode)
         .then(res => setMembers(res.data.data?.content || []));
       axiosInstance.get("/api/vehicles?size=10000")
-        .then(res => {
-          setVehicles(res.data.data?.content || []);
-        });
+        .then(res => setVehicles(res.data.data?.content || []));
+
       setFormData({
         memberId: "",
         vehicleId: "",
@@ -148,62 +147,65 @@ const DriveRegisterModal: React.FC<DriveRegisterModalProps> = ({ open, onClose, 
     }
   }, [selectedVehicleId, vehicles]);
 
-  function to24Hour(hour12: string, ampm: 'AM' | 'PM') {
-    let h = parseInt(hour12, 10);
+  function to24Hour(hour12: string, ampm: 'AM' | 'PM'): string {
+    const h = parseInt(hour12, 10);
     if (ampm === 'AM') {
-      if (h === 12) return '00';
-      return h.toString().padStart(2, '0');
+      // AM: 12시는 00시, 나머지는 그대로
+      return h === 12 ? '00' : h.toString().padStart(2, '0');
     } else {
-      if (h === 12) return '12';
-      return (h + 12).toString().padStart(2, '0');
+      // PM: 12시는 12시, 나머지는 +12
+      return h === 12 ? '12' : (h + 12).toString().padStart(2, '0');
     }
   }
 
   useEffect(() => {
     if (startMonthDay && startHour !== null) {
+      const hour24 = to24Hour(startHour, amPm);
       setFormData(f => ({
         ...f,
-        startDateTime: `${CURRENT_YEAR}-${startMonthDay}T${to24Hour(startHour, amPm)}:00`
+        startDateTime: `${CURRENT_YEAR}-${startMonthDay}T${hour24}:00`
       }));
     }
   }, [startMonthDay, startHour, amPm]);
 
   useEffect(() => {
-    if (endMonthDay && endHour !== null) {
+    if (endMonthDay && endHour !== null && amPmEnd) {
+      const hour24 = to24Hour(endHour, amPmEnd);
       setFormData(f => ({
         ...f,
-        endDateTime: `${CURRENT_YEAR}-${endMonthDay}T${to24Hour(endHour, amPmEnd)}:00`
+        endDateTime: `${CURRENT_YEAR}-${endMonthDay}T${hour24}:00`
       }));
     }
   }, [endMonthDay, endHour, amPmEnd]);
 
-  // 출발일시 변경 시 도착일시를 +1시간으로 자동 세팅
   useEffect(() => {
     if (!startMonthDay || !amPm || !startHour || endTimeManuallySet) return;
+
     const [mm, dd] = startMonthDay.split('-').map(Number);
-    let hour24 = Number(startHour);
+    const hour24 = parseInt(to24Hour(startHour, amPm), 10);
+    // 출발시간 + 1시간 계산 시 Date 객체 사용
     const startDate = new Date(CURRENT_YEAR, mm - 1, dd, hour24);
-    // 출발이 23시라면 도착은 다음날 00시
-    if (hour24 === 23) {
-      const nextDate = new Date(startDate);
-      nextDate.setDate(nextDate.getDate() + 1);
-      const endMm = String(nextDate.getMonth() + 1).padStart(2, '0');
-      const endDd = String(nextDate.getDate()).padStart(2, '0');
-      setEndMonthDay(`${endMm}-${endDd}`);
-      setAmPmEnd('AM');
-      setEndHour('00');
-      setEndTimeManuallySet(false);
-      return;
-    }
-    // 기본: +1시간
-    startDate.setHours(startDate.getHours() + 1);
+    startDate.setHours(startDate.getHours() + 1); // 이렇게 하면 자동으로 날짜가 넘어감
+
+    const endY = startDate.getFullYear();
     const endMm = String(startDate.getMonth() + 1).padStart(2, '0');
     const endDd = String(startDate.getDate()).padStart(2, '0');
-    const endAmPm = startDate.getHours() < 12 ? 'AM' : 'PM';
-    const end24Hour = startDate.getHours();
+    const endHourNum = startDate.getHours();
+    const endAmPm = endHourNum < 12 ? 'AM' : 'PM';
+    
+    // 12시간 형식으로 변환 - 올바른 로직
+    let endHour12;
+    if (endHourNum === 0) {
+      endHour12 = 12; // 00시 = 12 AM
+    } else if (endHourNum <= 12) {
+      endHour12 = endHourNum; // 01-12시 = 1-12 AM/PM
+    } else {
+      endHour12 = endHourNum - 12; // 13-23시 = 1-11 PM
+    }
+
     setEndMonthDay(`${endMm}-${endDd}`);
     setAmPmEnd(endAmPm);
-    setEndHour(end24Hour.toString().padStart(2, '0'));
+    setEndHour(endHour12.toString().padStart(2, '0'));
     setEndTimeManuallySet(false);
   }, [startMonthDay, amPm, startHour]);
 
@@ -213,15 +215,63 @@ const DriveRegisterModal: React.FC<DriveRegisterModalProps> = ({ open, onClose, 
     setErrors(e => ({ ...e, [name]: false }));
   };
 
-  // 도착일시를 사용자가 직접 선택하면 플래그 변경
   const handleEndTimeSelect = (type: 'ampm' | 'hour', value: string) => {
     setEndTimeManuallySet(true);
     if (type === 'ampm') setAmPmEnd(value as 'AM' | 'PM');
     if (type === 'hour') setEndHour(value);
   };
 
+  // 출발/도착 일시를 Date 객체로 변환 (비교용)
+  const getDateObj = (monthDay: string, hour: string | null, ampm: 'AM' | 'PM') => {
+    if (!monthDay || hour === null) return null;
+    const [mm, dd] = monthDay.split('-').map(Number);
+    const hour24 = parseInt(to24Hour(hour, ampm), 10);
+    return new Date(CURRENT_YEAR, mm - 1, dd, hour24);
+  };
+  const startDateObjForCompare = getDateObj(startMonthDay, startHour, amPm);
+  const endDateObjForCompare = getDateObj(endMonthDay, endHour, amPmEnd);
+  const isEndBeforeOrEqualStart =
+    !!(startDateObjForCompare && endDateObjForCompare && endDateObjForCompare <= startDateObjForCompare);
+
+  console.log('startDateObjForCompare:', startDateObjForCompare);
+  console.log('endDateObjForCompare:', endDateObjForCompare);
+  console.log('isEndBeforeOrEqualStart:', isEndBeforeOrEqualStart);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    let startDateTime = formData.startDateTime;
+    let startDateObj: Date | null = null;
+    if (!startDateTime && startMonthDay && startHour && amPm) {
+      const hour24 = parseInt(startHour, 10);
+      startDateTime = `${CURRENT_YEAR}-${startMonthDay}T${hour24.toString().padStart(2, '0')}:00`;
+      const [mm, dd] = startMonthDay.split('-').map(Number);
+      startDateObj = new Date(CURRENT_YEAR, mm - 1, dd, hour24);
+    } else if (startMonthDay && startHour && amPm) {
+      const hour24 = parseInt(startHour, 10);
+      const [mm, dd] = startMonthDay.split('-').map(Number);
+      startDateObj = new Date(CURRENT_YEAR, mm - 1, dd, hour24);
+    }
+
+    let endDateTime = formData.endDateTime;
+    if ((!endDateTime && endMonthDay && endHour) || (startDateObj && endMonthDay && endHour)) {
+      let hour24 = parseInt(to24Hour(endHour, amPmEnd), 10);
+      const [endMm, endDd] = endMonthDay.split('-').map(Number);
+      let endYear = startDateObj ? startDateObj.getFullYear() : CURRENT_YEAR;
+      let endDate = new Date(endYear, endMm - 1, endDd, hour24);
+      while (startDateObj && endDate <= startDateObj) {
+        endDate.setDate(endDate.getDate() + 1);
+      }
+      const yyyy = endDate.getFullYear();
+      const mm = String(endDate.getMonth() + 1).padStart(2, '0');
+      const dd = String(endDate.getDate()).padStart(2, '0');
+      const hh = endDate.getHours().toString().padStart(2, '0');
+      endDateTime = `${yyyy}-${mm}-${dd}T${hh}:00`;
+    }
+
+    console.log('startDateTime:', startDateTime);
+    console.log('endDateTime:', endDateTime);
+
     const memberId = Number(formData.memberId);
     const vehicleId = Number(formData.vehicleId);
 
@@ -236,8 +286,8 @@ const DriveRegisterModal: React.FC<DriveRegisterModalProps> = ({ open, onClose, 
       vehicleId: !formData.vehicleId,
       startLocation: !formData.startLocation,
       endLocation: !formData.endLocation,
-      startDateTime: !formData.startDateTime,
-      endDateTime: !formData.endDateTime,
+      startDateTime: !startDateTime,
+      endDateTime: !endDateTime,
     };
     setErrors(newErrors);
     if (Object.values(newErrors).some(Boolean)) return;
@@ -250,10 +300,9 @@ const DriveRegisterModal: React.FC<DriveRegisterModalProps> = ({ open, onClose, 
         driveType: formData.driveType,
         startLocation: formData.startLocation,
         endLocation: formData.endLocation,
-        startDateTime: formData.startDateTime,
-        endDateTime: formData.endDateTime,
+        startDateTime,
+        endDateTime,
       };
-      console.log("payload", payload);
       const res = await axiosInstance.post("/api/drives", payload);
       const successMessage = res.data?.message || "운행이 성공적으로 예약되었습니다.";
       onSuccess(successMessage);
@@ -349,19 +398,29 @@ const DriveRegisterModal: React.FC<DriveRegisterModalProps> = ({ open, onClose, 
               <div className="flex flex-row flex-wrap gap-1 w-full mt-2">
                 {(amPm === 'AM' ? AM_HOURS : PM_HOURS).map(hour => {
                   let disabled = false;
-                  if (startMonthDay === `${today.mm}-${today.dd}` && amPm === (initialHour < 12 ? 'AM' : 'PM')) {
+                  if (startMonthDay === `${today.mm}-${today.dd}` && amPm === (nowHour < 12 ? 'AM' : 'PM')) {
                     if (nowMinute === 0) {
-                      if (hour < initialHour) disabled = true;
+                      if (hour < nowHour) disabled = true;
                     } else {
                       if (hour <= nowHour) disabled = true;
                     }
                   }
+                  // 24시 이상은 비활성화
+                  if (hour >= 24) disabled = true;
+                  // 12시간제 변환
+                  const hour12 = hour % 12 === 0 ? 12 : hour % 12;
+                  const buttonAmPm = hour < 12 ? 'AM' : 'PM';
                   return (
                     <button
                       type="button"
                       key={hour}
-                      className={`min-w-[36px] px-1 py-1 rounded text-sm ${startHour === hour.toString().padStart(2, "0") ? "bg-green-500 text-white" : "bg-gray-100"} ${disabled ? "opacity-40 cursor-not-allowed" : ""}`}
-                      onClick={() => !disabled && setStartHour(hour.toString().padStart(2, "0"))}
+                      className={`min-w-[36px] px-1 py-1 rounded text-sm ${startHour === hour12.toString().padStart(2, "0") && amPm === buttonAmPm ? "bg-green-500 text-white" : "bg-gray-100"} ${disabled ? "opacity-40 cursor-not-allowed" : ""}`}
+                      onClick={() => {
+                        if (!disabled) {
+                          setStartHour(hour12.toString().padStart(2, "0"));
+                          setAmPm(buttonAmPm);
+                        }
+                      }}
                       disabled={disabled}
                     >
                       {hour.toString().padStart(2, "0")}
@@ -404,21 +463,29 @@ const DriveRegisterModal: React.FC<DriveRegisterModalProps> = ({ open, onClose, 
               <div className="flex flex-row flex-wrap gap-1 w-full mt-2">
                 {(amPmEnd === 'AM' ? AM_HOURS : PM_HOURS).map(hour => {
                   let disabled = false;
+                  // 12시간제 변환
+                  const hour12 = hour % 12 === 0 ? 12 : hour % 12;
+                  const buttonAmPm = hour < 12 ? 'AM' : 'PM';
+                  // 출발일시와 비교해서 비활성화 (24시간제로 변환해서 비교)
                   if (endMonthDay === startMonthDay && amPmEnd === amPm) {
-                    if (Number(startHour) !== null && hour <= Number(startHour)) disabled = true;
-                  } else if (endMonthDay === `${today.mm}-${today.dd}` && amPmEnd === (initialHour < 12 ? 'AM' : 'PM')) {
-                    if (nowMinute === 0) {
-                      if (hour < initialHour + 1) disabled = true;
-                    } else {
-                      if (hour <= nowHour + 1) disabled = true;
-                    }
+                    const start24 = parseInt(to24Hour(startHour ?? '00', amPm), 10);
+                    const end24 = parseInt(to24Hour(hour12.toString().padStart(2, '0'), buttonAmPm), 10);
+                    if (end24 <= start24) disabled = true;
+                  } else if (endMonthDay === `${today.mm}-${today.dd}` && amPmEnd === (nowHour < 12 ? 'AM' : 'PM')) {
+                    if (hour < nowHour + 1) disabled = true;
                   }
+                  if (hour >= 24) disabled = true;
                   return (
                     <button
                       type="button"
                       key={hour}
-                      className={`min-w-[36px] px-1 py-1 rounded text-sm ${endHour === hour.toString().padStart(2, "0") ? "bg-green-500 text-white" : "bg-gray-100"} ${disabled ? "opacity-40 cursor-not-allowed" : ""}`}
-                      onClick={() => !disabled && handleEndTimeSelect('hour', hour.toString().padStart(2, "0"))}
+                      className={`min-w-[36px] px-1 py-1 rounded text-sm ${endHour === hour12.toString().padStart(2, "0") && amPmEnd === buttonAmPm ? "bg-green-500 text-white" : "bg-gray-100"} ${disabled ? "opacity-40 cursor-not-allowed" : ""}`}
+                      onClick={() => {
+                        if (!disabled) {
+                          handleEndTimeSelect('hour', hour12.toString().padStart(2, "0"));
+                          setAmPmEnd(buttonAmPm);
+                        }
+                      }}
                       disabled={disabled}
                     >
                       {hour.toString().padStart(2, "0")}
@@ -429,8 +496,8 @@ const DriveRegisterModal: React.FC<DriveRegisterModalProps> = ({ open, onClose, 
               {errors.endDateTime && <p className="text-red-500 text-xs mt-1">도착 일시는 필수 항목입니다.</p>}
             </div>
           </div>
-          <button type="submit" disabled={loading}
-            className="w-full py-4 bg-green-500 hover:bg-green-600 text-white font-medium rounded-md transition-colors duration-300 !rounded-button whitespace-nowrap cursor-pointer">
+          <button type="submit" disabled={loading || isEndBeforeOrEqualStart}
+            className="w-full py-4 bg-green-500 hover:bg-green-600 text-white font-medium rounded-md transition-colors duration-300 !rounded-button whitespace-nowrap cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed">
             {loading ? "등록 중..." : "예약하기"}
           </button>
         </form>
