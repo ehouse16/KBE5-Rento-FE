@@ -1,4 +1,4 @@
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { PathPoint } from '../../types/drive';
 
 // 카카오맵 API가 window 객체에 전역으로 등록되므로, 타입 선언이 필요합니다.
@@ -28,11 +28,34 @@ interface KakaoMapProps {
   onUserInteraction?: () => void;
   programmaticMove?: boolean; // 프로그래밍적 이동 여부 prop 추가
   resetUserInteracted?: number; // 외부에서 userInteractedRef 리셋용 prop
+  disablePolyline?: boolean; // 폴리라인(선) 그리기 비활성화
 }
 
 const KAKAO_MAP_APP_KEY = process.env.REACT_APP_KAKAO_MAP_APP_KEY;
 
-const KakaoMap: React.FC<KakaoMapProps> = ({ vehiclePaths, vehicleMarkers, path, markers, onMapChange, vehicleFocusId, mapCenter, mapLevel, onUserInteraction, programmaticMove = false, resetUserInteracted }) => {
+// 차량별 색상 팔레트 (10개, 필요시 더 추가)
+const colorPalette = [
+  '#e91e63', // 진분홍
+  '#1976d2', // 파랑
+  '#43a047', // 초록
+  '#ff9800', // 주황
+  '#8e24aa', // 보라
+  '#f44336', // 빨강
+  '#00bcd4', // 청록
+  '#ffb300', // 노랑
+  '#6d4c41', // 갈색
+  '#009688', // 짙은 청록
+];
+
+// vehicleId별 색상 반환 함수
+function getColorByVehicleId(vehicleId: string, idx: number) {
+  // vehicleId가 숫자면 그걸로, 아니면 idx로 fallback
+  const n = parseInt(vehicleId, 10);
+  if (!isNaN(n)) return colorPalette[n % colorPalette.length];
+  return colorPalette[idx % colorPalette.length];
+}
+
+const KakaoMap: React.FC<KakaoMapProps> = ({ vehiclePaths, vehicleMarkers, path, markers, onMapChange, vehicleFocusId, mapCenter, mapLevel, onUserInteraction, programmaticMove = false, resetUserInteracted, disablePolyline = false }) => {
   const mapContainer = useRef<HTMLDivElement>(null);
   const mapRef = useRef<any>(null);
   const overlaysRef = useRef<any[]>([]); // 오버레이/폴리라인 추적
@@ -82,26 +105,15 @@ const KakaoMap: React.FC<KakaoMapProps> = ({ vehiclePaths, vehicleMarkers, path,
     };
   }, []);
 
-  // 최초 지도 생성 시 마지막 위치로 복원
+  // 지도 객체(mapRef.current)는 최초 1회만 생성
   useEffect(() => {
     const scriptId = 'kakao-map-script';
-    let mapInstance: any = null;
-    const initMap = () => {
-      if (!mapContainer.current) return;
-      let center;
-      let level = 8;
-      if (mapCenter) {
-        center = new window.kakao.maps.LatLng(mapCenter.lat, mapCenter.lng);
-        level = mapLevel || 8;
-      } else {
-        center = new window.kakao.maps.LatLng(37.5665, 126.9780);
-      }
-      const map = new window.kakao.maps.Map(mapContainer.current, {
-        center,
-        level,
-      });
+    const createMap = () => {
+      if (!window.kakao || !window.kakao.maps || !mapContainer.current) return;
+      if (mapRef.current) return;
+      const center = new window.kakao.maps.LatLng(37.5665, 126.9780);
+      const map = new window.kakao.maps.Map(mapContainer.current, { center, level: 8 });
       mapRef.current = map;
-      mapInstance = map;
       if (onMapChange) {
         window.kakao.maps.event.addListener(map, 'zoom_changed', () => {
           const c = map.getCenter();
@@ -114,7 +126,7 @@ const KakaoMap: React.FC<KakaoMapProps> = ({ vehiclePaths, vehicleMarkers, path,
       }
     };
     if (window.kakao && window.kakao.maps) {
-      window.kakao.maps.load(initMap);
+      window.kakao.maps.load(createMap);
     } else {
       let script = document.getElementById(scriptId) as HTMLScriptElement;
       if (!script) {
@@ -126,18 +138,22 @@ const KakaoMap: React.FC<KakaoMapProps> = ({ vehiclePaths, vehicleMarkers, path,
       }
       script.onload = () => {
         if (window.kakao && window.kakao.maps) {
-          window.kakao.maps.load(initMap);
+          window.kakao.maps.load(createMap);
         }
       };
     }
-    // 이벤트 해제
-    return () => {
-      if (mapInstance && onMapChange) {
-        window.kakao.maps.event.removeListener(mapInstance, 'zoom_changed', onMapChange);
-        window.kakao.maps.event.removeListener(mapInstance, 'dragend', onMapChange);
-      }
-    };
-  }, [onMapChange, mapCenter, mapLevel]);
+  }, []);
+
+  // mapCenter, mapLevel 등 props가 바뀔 때마다 지도 상태만 갱신
+  useEffect(() => {
+    if (!window.kakao || !window.kakao.maps || !mapRef.current) return;
+    if (mapCenter) {
+      mapRef.current.setCenter(new window.kakao.maps.LatLng(mapCenter.lat, mapCenter.lng));
+    }
+    if (mapLevel) {
+      mapRef.current.setLevel(mapLevel);
+    }
+  }, [mapCenter, mapLevel]);
 
   // 지도 이벤트 등록 (사용자 조작 감지)
   useEffect(() => {
@@ -186,8 +202,9 @@ const KakaoMap: React.FC<KakaoMapProps> = ({ vehiclePaths, vehicleMarkers, path,
     overlaysRef.current.forEach((o) => o.setMap(null));
     overlaysRef.current = [];
 
-    // 표시할 차량이 없으면 지도 상태 유지(서울로 이동 X)
+    // 표시할 차량이 없으면 지도 상태 유지(서울로 이동 X), 오버레이 완전 비움
     if (Object.keys(mergedVehiclePaths).length === 0 && Object.keys(mergedVehicleMarkers).length === 0) {
+      overlaysRef.current = [];
       return;
     }
 
@@ -195,15 +212,16 @@ const KakaoMap: React.FC<KakaoMapProps> = ({ vehiclePaths, vehicleMarkers, path,
     const bounds = new window.kakao.maps.LatLngBounds();
     let hasPoint = false;
 
-    // 모든 차량 경로 그리기
-    Object.values(mergedVehiclePaths).forEach((p, idx) => {
-      if (p.length > 1) {
+    // 모든 차량 경로 그리기 (스타일 개선)
+    Object.entries(mergedVehiclePaths).forEach(([vehicleId, p], idx) => {
+      const color = getColorByVehicleId(vehicleId, idx);
+      if (!disablePolyline && p.length > 1) {
         const linePath = p.map(pt => new window.kakao.maps.LatLng(pt.latitude, pt.longitude));
         const polyline = new window.kakao.maps.Polyline({
           path: linePath,
-          strokeWeight: 5,
-          strokeColor: '#FF0000',
-          strokeOpacity: 0.7,
+          strokeWeight: 6,
+          strokeColor: color,
+          strokeOpacity: 0.8,
           strokeStyle: 'solid',
           map,
         });
@@ -214,8 +232,7 @@ const KakaoMap: React.FC<KakaoMapProps> = ({ vehiclePaths, vehicleMarkers, path,
         const latlng = new window.kakao.maps.LatLng(p[0].latitude, p[0].longitude);
         bounds.extend(latlng);
         hasPoint = true;
-        // 경로가 1개만 있을 때도 마커 추가
-        const markerKey = Object.keys(mergedVehiclePaths)[idx];
+        const markerKey = vehicleId;
         const marker = mergedVehicleMarkers[markerKey] || {
           lat: p[0].latitude,
           lng: p[0].longitude,
@@ -224,20 +241,21 @@ const KakaoMap: React.FC<KakaoMapProps> = ({ vehiclePaths, vehicleMarkers, path,
         const overlay = new window.kakao.maps.CustomOverlay({
           map,
           position: new window.kakao.maps.LatLng(marker.lat, marker.lng),
-          content: `<div style="padding:4px 8px; background:#1a73e8; color:white; border-radius:4px; font-size:13px; font-weight:bold;">${marker.label || '차량'}</div>`,
+          content: `<div style=\"padding:6px 12px; background:${color}; color:white; border-radius:6px; font-size:15px; font-weight:bold; box-shadow:0 2px 8px rgba(0,0,0,0.15); cursor:pointer;\">${marker.label || '차량'}</div>`,
           yAnchor: 1.5,
         });
         overlaysRef.current.push(overlay);
       }
     });
 
-    // 모든 차량 마커 그리기 (경로와 별개로)
-    Object.values(mergedVehicleMarkers).forEach((marker) => {
+    // 모든 차량 마커 그리기 (경로와 별개로, 클릭 시 툴팁)
+    Object.entries(mergedVehicleMarkers).forEach(([vehicleId, marker], idx) => {
+      const color = getColorByVehicleId(vehicleId, idx);
       if (marker.lat && marker.lng) {
         const overlay = new window.kakao.maps.CustomOverlay({
           map,
           position: new window.kakao.maps.LatLng(marker.lat, marker.lng),
-          content: `<div style="padding:4px 8px; background:#e91e63; color:white; border-radius:4px; font-size:13px; font-weight:bold;">${marker.label || '차량'}</div>`,
+          content: `<div style="padding:6px 12px; background:${color}; color:white; border-radius:6px; font-size:15px; font-weight:bold; box-shadow:0 2px 8px rgba(0,0,0,0.15); cursor:pointer;" onclick=\"alert('차량ID: ${vehicleId} / ${marker.label || ''}')\">${marker.label || '차량'}</div>`,
           yAnchor: 1.5,
         });
         overlaysRef.current.push(overlay);
@@ -251,7 +269,7 @@ const KakaoMap: React.FC<KakaoMapProps> = ({ vehiclePaths, vehicleMarkers, path,
       map.setBounds(bounds);
     }
     // vehicleFocusId가 없으면 지도 중심/줌은 사용자가 조작한 상태를 그대로 유지
-  }, [mergedVehiclePaths, mergedVehicleMarkers, vehicleFocusId]);
+  }, [mergedVehiclePaths, mergedVehicleMarkers, vehicleFocusId, disablePolyline]);
 
   // mapCenter prop이 바뀔 때마다 지도 중심 이동
   useEffect(() => {
@@ -288,7 +306,8 @@ const KakaoMap: React.FC<KakaoMapProps> = ({ vehiclePaths, vehicleMarkers, path,
     }
   }, [resetUserInteracted]);
 
-  return <div ref={mapContainer} style={{ width: '100%', height: '1000px', borderRadius: '10px' }} />;
+  // 반응형 스타일 적용
+  return <div ref={mapContainer} style={{ width: '100%', height: 'min(70vw, 1000px)', minHeight: 300, borderRadius: '10px' }} />;
 };
 
 export default KakaoMap;

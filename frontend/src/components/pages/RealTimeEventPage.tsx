@@ -48,6 +48,9 @@ const RealTimeEventPage: React.FC = () => {
   const userInteractedRef = useRef(false); // 사용자 지도 조작 감지 ref
   const userInteractedTimer = useRef<NodeJS.Timeout | null>(null);
   const [resetUserInteracted, setResetUserInteracted] = useState(0); // KakaoMap userInteractedRef 리셋용
+  const updateQueueRef = useRef(false);
+  const latestDataRef = useRef<{ [mdn: string]: any }>({});
+  const lastReceivedRef = useRef<{ [mdn: string]: number }>({});
 
   // driveId 쿼리 파싱
   const driveIdParam = searchParams.get('driveId');
@@ -70,7 +73,6 @@ const RealTimeEventPage: React.FC = () => {
     setTrackingStatus('SSE 구독 요청 중...');
     const eventSource = new EventSource(`${API_BASE_URL}/api/stream/subscribe?token=${token}`);
 
-    // 연결 성공 시 상태 변경 (EventSourcePolyfill은 onopen 지원)
     eventSource.onopen = () => {
       setTrackingStatus('SSE 구독 성공');
     };
@@ -80,17 +82,15 @@ const RealTimeEventPage: React.FC = () => {
       if (!messageEvent.data) return;
       try {
         const data = JSON.parse(messageEvent.data);
-        // 최초 데이터 수신 시 상태 변경 (onopen이 안 먹히는 환경 대비)
         setTrackingStatus('SSE 구독 성공');
-        // 큐에 추가
-        eventQueueRef.current.push(data);
+        if (data && data.mdn) {
+          lastReceivedRef.current[String(data.mdn)] = Date.now(); // 항상 문자열로 저장
+          latestDataRef.current[String(data.mdn)] = data;
+        }
       } catch (e) {}
     });
 
-    eventSource.addEventListener('heartbeat', () => {
-      // ping은 큐에 넣지 않음
-    });
-
+    eventSource.addEventListener('heartbeat', () => {});
     eventSource.onerror = () => {
       setTrackingStatus('연결 오류 발생. 자동 재연결을 시도합니다.');
     };
@@ -101,12 +101,43 @@ const RealTimeEventPage: React.FC = () => {
     };
   }, []);
 
-  // 초당 1개씩 큐에서 꺼내서 상태 갱신
+  // 10초 동안 cycle-info가 오지 않은 mdn의 마커/경로 삭제
   useEffect(() => {
     const interval = setInterval(() => {
-      if (eventQueueRef.current.length > 0) {
-        const data = eventQueueRef.current.shift();
-        // mdn을 key로 사용
+      const now = Date.now();
+      setVehicleMarkers(prev => {
+        const updated = { ...prev };
+        Object.keys(updated).forEach(mdn => {
+          const last = lastReceivedRef.current[String(mdn)];
+          const diff = now - (last || 0);
+          if (diff > 10000) { // 10초가 지난 mdn은 즉시 삭제
+            delete updated[mdn];
+          }
+        });
+        if (Object.keys(updated).length === 0) return {};
+        return updated;
+      });
+      setVehiclePaths(prev => {
+        const updated = { ...prev };
+        Object.keys(updated).forEach(mdn => {
+          const last = lastReceivedRef.current[String(mdn)];
+          const diff = now - (last || 0);
+          if (diff > 10000) {
+            delete updated[mdn];
+          }
+        });
+        if (Object.keys(updated).length === 0) return {};
+        return updated;
+      });
+    }, 1000);
+    return () => clearInterval(interval);
+  }, []);
+
+  // 초당 1회, 모든 차량의 최신값만 반영
+  useEffect(() => {
+    const interval = setInterval(() => {
+      const allLatest = Object.values(latestDataRef.current);
+      allLatest.forEach((data: any) => {
         if (data && data.latitude && data.longitude && data.mdn) {
           const vehicleId = data.mdn.toString();
           const newPathPoint: PathPoint = {
@@ -116,13 +147,17 @@ const RealTimeEventPage: React.FC = () => {
           setVehiclePaths(prev => {
             const prevPath = prev[vehicleId] || [];
             const last = prevPath[prevPath.length - 1];
+            // 중복 좌표는 무시
             if (last && Math.abs(last.latitude - data.latitude) < 0.0001 && Math.abs(last.longitude - data.longitude) < 0.0001) {
               return prev;
             }
             return { ...prev, [vehicleId]: [...prevPath, newPathPoint] };
           });
           setVehicleMarkers(prev => {
-            const next = {
+            if (prev[vehicleId] && prev[vehicleId].lat === data.latitude && prev[vehicleId].lng === data.longitude) {
+              return prev;
+            }
+            return {
               ...prev,
               [vehicleId]: {
                 lat: data.latitude,
@@ -130,11 +165,11 @@ const RealTimeEventPage: React.FC = () => {
                 label: `MDN: ${vehicleId}`
               }
             };
-            console.log('[setVehicleMarkers] prev:', prev, 'next:', next);
-            return next;
           });
         }
-      }
+      });
+      // 최신값 반영 후 초기화(필요시)
+      // latestDataRef.current = {};
     }, 1000);
     return () => clearInterval(interval);
   }, []);
@@ -279,8 +314,9 @@ const RealTimeEventPage: React.FC = () => {
     ...Object.keys(vehicleMarkers)
   ]));
 
-  // 좌측 목록에 표시할 차량
+  // 좌측 목록에 표시할 차량 (vehicleMarkers에 남아있는 mdn만)
   const displayDrivingList = allMdns
+    .filter(mdn => vehicleMarkers[mdn]) // 마커가 남아있는 mdn만
     .map(mdn => drivingList.find(d => d.mdn === mdn) || {
       id: null,
       mdn,
@@ -291,6 +327,8 @@ const RealTimeEventPage: React.FC = () => {
       startDate: '',
       driveStatus: 'DRIVING',
     });
+
+  console.log('[실시간 관제] displayDrivingList.length:', displayDrivingList.length, displayDrivingList);
 
   // 지도에 표시할 데이터도 합집합 기준으로 필터링
   let mapMarkers = {};
@@ -343,7 +381,7 @@ const RealTimeEventPage: React.FC = () => {
           onChange={e => setListSearch(e.target.value)}
           className="border rounded px-2 py-1 w-full mb-4"
         />
-        {allMdns.length === 0 ? (
+        {displayDrivingList.length === 0 ? (
           <div className="text-gray-500 text-sm">운행중인 차량이 없습니다.</div>
         ) : (
           <ul className="space-y-3">
