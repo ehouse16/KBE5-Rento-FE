@@ -6,6 +6,7 @@ import DriveList from "../drive/DriveList";
 import DriveRegisterModal from "../drive/DriveRegisterModal";
 import axiosInstance from '../../utils/axios';
 import { useNavigate } from 'react-router-dom';
+import VehiclePagination, { PageSizeDropdown, PaginationButtons } from '../vehicle/VehiclePagination';
 
 // DriveListPage 내부에서 사용할 간소화된 Drive 인터페이스 정의
 interface Drive {
@@ -35,6 +36,8 @@ const DriveListPage: React.FC = () => {
   const [startDate, setStartDate] = useState<string>("");
   const [endDate, setEndDate] = useState<string>("");
   const navigate = useNavigate();
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage, setItemsPerPage] = useState(5);
 
   const formatDateTimeParam = (date: string, isStart: boolean) => {
     if (!date) return '';
@@ -154,7 +157,8 @@ const DriveListPage: React.FC = () => {
     }
   };
 
-  const totalPages = Math.max(1, Math.ceil(totalElements / 10)); // 10은 페이지당 표시 개수, 필요시 변수로
+  const totalPages = Math.max(1, Math.ceil(filteredDrivesByStatus.length / itemsPerPage));
+  const pagedDrives = filteredDrivesByStatus.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
 
   return (
     <div className="min-h-screen bg-white flex flex-col">
@@ -227,7 +231,7 @@ const DriveListPage: React.FC = () => {
               <input type="date" value={endDate} onChange={e => setEndDate(e.target.value)} className="border rounded px-2 py-1" />
             </div>
 
-            <DriveList drives={filteredDrivesByStatus} renderExtra={(drive) => (
+            <DriveList drives={pagedDrives} renderExtra={(drive) => (
               <>
                 <button
                   className="ml-2 px-2 py-1 text-blue-500 hover:bg-blue-600 rounded text-xs"
@@ -245,28 +249,15 @@ const DriveListPage: React.FC = () => {
                 </button>
               </>
             )} />
-
-            {totalPages > 1 && (
-              <div className="mt-8 flex justify-center">
-                <nav className="flex items-center">
-                  <button className="px-3 py-1 rounded-md mr-1 text-gray-500 hover:bg-gray-100 !rounded-button whitespace-nowrap cursor-pointer">
-                    <i className="fas fa-chevron-left"></i>
-                  </button>
-                  <button className="px-3 py-1 rounded-md mx-1 bg-green-500 text-white !rounded-button whitespace-nowrap cursor-pointer">
-                    1
-                  </button>
-                  <button className="px-3 py-1 rounded-md mx-1 text-gray-700 hover:bg-gray-100 !rounded-button whitespace-nowrap cursor-pointer">
-                    2
-                  </button>
-                  <button className="px-3 py-1 rounded-md mx-1 text-gray-700 hover:bg-gray-100 !rounded-button whitespace-nowrap cursor-pointer">
-                    3
-                  </button>
-                  <button className="px-3 py-1 rounded-md ml-1 text-gray-500 hover:bg-gray-100 !rounded-button whitespace-nowrap cursor-pointer">
-                    <i className="fas fa-chevron-right"></i>
-                  </button>
-                </nav>
+            <div className="flex items-center justify-between mt-4">
+              <div className="flex-1"></div>
+              <div className="flex-1 flex justify-center">
+                <PageSizeDropdown itemsPerPage={itemsPerPage} setItemsPerPage={setItemsPerPage} setCurrentPage={setCurrentPage} />
               </div>
-            )}
+              <div className="flex-1 flex justify-end">
+                <PaginationButtons currentPage={currentPage} totalPages={totalPages} setCurrentPage={setCurrentPage} />
+              </div>
+            </div>
           </div>
         </div>
       </div>

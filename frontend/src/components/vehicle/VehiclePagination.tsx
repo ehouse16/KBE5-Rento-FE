@@ -47,26 +47,23 @@ const VehiclePagination: React.FC<VehiclePaginationProps> = ({ currentPage, tota
           다음
         </button>
       </div>
-      <div className="hidden sm:flex-1 sm:flex sm:items-center sm:justify-between">
-        <div></div>
-        <div>
-          <div className="flex items-center">
-            <span className="mr-2 text-sm text-gray-700">페이지당 표시:</span>
-            <select
-              className="border-gray-300 rounded-md text-sm focus:outline-none focus:ring-green-500 focus:border-green-500"
-              value={itemsPerPage}
-              onChange={e => {
-                setItemsPerPage(Number(e.target.value));
-                setCurrentPage(1);
-              }}
-            >
-              <option key={5} value={5}>5</option>
-              <option key={10} value={10}>10</option>
-              <option key={20} value={20}>20</option>
-            </select>
-          </div>
+      <div className="hidden sm:flex w-full sm:flex-row sm:items-center sm:justify-end">
+        <div className="flex items-center">
+          <span className="mr-2 text-sm text-gray-700">페이지당 표시:</span>
+          <select
+            className="border-gray-300 rounded-md text-sm focus:outline-none focus:ring-green-500 focus:border-green-500"
+            value={itemsPerPage}
+            onChange={e => {
+              setItemsPerPage(Number(e.target.value));
+              setCurrentPage(1);
+            }}
+          >
+            <option key={5} value={5}>5</option>
+            <option key={10} value={10}>10</option>
+            <option key={20} value={20}>20</option>
+          </select>
         </div>
-        <div>
+        <div className="ml-4">
           <nav className="relative z-0 inline-flex rounded-md shadow-sm -space-x-px" aria-label="Pagination">
             <button
               onClick={() => setCurrentPage(currentPage > 1 ? currentPage - 1 : 1)}
@@ -89,6 +86,64 @@ const VehiclePagination: React.FC<VehiclePaginationProps> = ({ currentPage, tota
         </div>
       </div>
     </div>
+  );
+};
+
+export const PageSizeDropdown: React.FC<{ itemsPerPage: number; setItemsPerPage: (count: number) => void; setCurrentPage: (page: number) => void; }> = ({ itemsPerPage, setItemsPerPage, setCurrentPage }) => (
+  <div className="flex items-center">
+    <span className="mr-2 text-sm text-gray-700">페이지당 표시:</span>
+    <select
+      className="border-gray-300 rounded-md text-sm focus:outline-none focus:ring-green-500 focus:border-green-500"
+      value={itemsPerPage}
+      onChange={e => {
+        setItemsPerPage(Number(e.target.value));
+        setCurrentPage(1);
+      }}
+    >
+      <option key={5} value={5}>5</option>
+      <option key={10} value={10}>10</option>
+      <option key={20} value={20}>20</option>
+    </select>
+  </div>
+);
+
+export const PaginationButtons: React.FC<{ currentPage: number; totalPages: number; setCurrentPage: (page: number) => void; }> = ({ currentPage, totalPages, setCurrentPage }) => {
+  const safeTotalPages = Math.max(1, totalPages);
+  const renderPageButtons = () => {
+    const buttons = [];
+    for (let i = 1; i <= safeTotalPages; i++) {
+      buttons.push(
+        <button
+          key={i}
+          onClick={() => setCurrentPage(i)}
+          className={`relative inline-flex items-center px-4 py-2 border ${currentPage === i ? 'z-10 bg-green-50 border-green-500 text-green-600' : 'bg-white border-gray-300 text-gray-500 hover:bg-gray-50'} cursor-pointer whitespace-nowrap !rounded-button`}
+        >
+          {i}
+        </button>
+      );
+    }
+    return buttons;
+  };
+  return (
+    <nav className="relative z-0 inline-flex rounded-md shadow-sm -space-x-px" aria-label="Pagination">
+      <button
+        onClick={() => setCurrentPage(currentPage > 1 ? currentPage - 1 : 1)}
+        disabled={currentPage === 1}
+        className={`relative inline-flex items-center px-2 py-2 rounded-l-md border border-gray-300 ${currentPage === 1 ? 'bg-gray-100 text-gray-400 cursor-not-allowed' : 'bg-white text-gray-500 hover:bg-gray-50'} cursor-pointer whitespace-nowrap !rounded-button`}
+      >
+        <span className="sr-only">이전</span>
+        <i className="fas fa-chevron-left text-xs"></i>
+      </button>
+      {renderPageButtons()}
+      <button
+        onClick={() => setCurrentPage(currentPage < safeTotalPages ? currentPage + 1 : safeTotalPages)}
+        disabled={currentPage === safeTotalPages}
+        className={`relative inline-flex items-center px-2 py-2 rounded-r-md border border-gray-300 ${safeTotalPages === currentPage ? 'bg-gray-100 text-gray-400 cursor-not-allowed' : 'bg-white text-gray-500 hover:bg-gray-50'} cursor-pointer whitespace-nowrap !rounded-button`}
+      >
+        <span className="sr-only">다음</span>
+        <i className="fas fa-chevron-right text-xs"></i>
+      </button>
+    </nav>
   );
 };
 

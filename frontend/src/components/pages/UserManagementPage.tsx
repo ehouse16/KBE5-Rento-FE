@@ -4,7 +4,7 @@ import { Department, DepartmentRegisterRequest, DepartmentUpdateRequest, getDepa
 import { handleApiError } from '../../utils/errorHandler';
 import { useCompany } from '../../contexts/CompanyContext';
 import axiosInstance from '../../utils/axios';
-import VehiclePagination from '../vehicle/VehiclePagination';
+import VehiclePagination, { PageSizeDropdown, PaginationButtons } from '../vehicle/VehiclePagination';
 import { PieChart, Pie, Cell, Legend, ResponsiveContainer, Tooltip } from 'recharts';
 
 const COLORS = [
@@ -743,14 +743,14 @@ const UserManagementPage: React.FC = () => {
               </div>
             </div>
             {/* Pagination UI */}
-            <div className="mt-4 md:mt-0">
-              <VehiclePagination
-                currentPage={currentPage}
-                totalPages={Math.max(1, Math.ceil(totalElements / itemsPerPage))}
-                setCurrentPage={setCurrentPage}
-                itemsPerPage={itemsPerPage}
-                setItemsPerPage={setItemsPerPage}
-              />
+            <div className="flex items-center justify-between mt-4">
+              <div className="flex-1"></div>
+              <div className="flex-1 flex justify-center">
+                <PageSizeDropdown itemsPerPage={itemsPerPage} setItemsPerPage={setItemsPerPage} setCurrentPage={setCurrentPage} />
+              </div>
+              <div className="flex-1 flex justify-end">
+                <PaginationButtons currentPage={currentPage} totalPages={Math.max(1, Math.ceil(totalElements / itemsPerPage))} setCurrentPage={setCurrentPage} />
+              </div>
             </div>
           </>
         )}

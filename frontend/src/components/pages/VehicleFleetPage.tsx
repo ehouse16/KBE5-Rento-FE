@@ -5,7 +5,7 @@ import Sidebar from '../Sidebar';
 import VehicleFilter from '../vehicle/VehicleFilter';
 import VehicleStats from '../vehicle/VehicleStats';
 import VehicleTable from '../vehicle/VehicleTable';
-import VehiclePagination from '../vehicle/VehiclePagination';
+import VehiclePagination, { PageSizeDropdown, PaginationButtons } from '../vehicle/VehiclePagination';
 import VehicleAddButton from '../vehicle/VehicleAddButton';
 import VehicleAddModal from '../vehicle/VehicleAddModal';
 import axiosInstance from '../../utils/axios';
@@ -171,13 +171,15 @@ const VehicleFleetPage: React.FC = () => {
             setCurrentPage={setCurrentPage}
             itemsPerPage={itemsPerPage}
           />
-          <VehiclePagination
-            currentPage={isNaN(currentPage) ? 1 : currentPage}
-            totalPages={isNaN(itemsPerPage) || itemsPerPage === 0 ? 1 : Math.ceil((Number.isNaN(Number(totalElements)) ? 0 : Number(totalElements)) / itemsPerPage)}
-            setCurrentPage={setCurrentPage}
-            itemsPerPage={isNaN(itemsPerPage) ? 5 : itemsPerPage}
-            setItemsPerPage={setItemsPerPage}
-          />
+          <div className="flex items-center justify-between mt-4">
+            <div className="flex-1"></div>
+            <div className="flex-1 flex justify-center">
+              <PageSizeDropdown itemsPerPage={itemsPerPage} setItemsPerPage={setItemsPerPage} setCurrentPage={setCurrentPage} />
+            </div>
+            <div className="flex-1 flex justify-end">
+              <PaginationButtons currentPage={currentPage} totalPages={isNaN(itemsPerPage) || itemsPerPage === 0 ? 1 : Math.ceil((Number.isNaN(Number(totalElements)) ? 0 : Number(totalElements)) / itemsPerPage)} setCurrentPage={setCurrentPage} />
+            </div>
+          </div>
         </main>
       </div>
       <Footer />
