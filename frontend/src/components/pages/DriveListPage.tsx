@@ -6,7 +6,7 @@ import DriveList from "../drive/DriveList";
 import DriveRegisterModal from "../drive/DriveRegisterModal";
 import axiosInstance from '../../utils/axios';
 import { useNavigate } from 'react-router-dom';
-import VehiclePagination, { PageSizeDropdown, PaginationButtons } from '../vehicle/VehiclePagination';
+import VehiclePagination, { PaginationButtons } from '../vehicle/VehiclePagination';
 
 // DriveListPage 내부에서 사용할 간소화된 Drive 인터페이스 정의
 interface Drive {
@@ -37,7 +37,7 @@ const DriveListPage: React.FC = () => {
   const [endDate, setEndDate] = useState<string>("");
   const navigate = useNavigate();
   const [currentPage, setCurrentPage] = useState(1);
-  const [itemsPerPage, setItemsPerPage] = useState(5);
+  const [itemsPerPage] = useState(9); // 고정값, setItemsPerPage 제거
 
   const formatDateTimeParam = (date: string, isStart: boolean) => {
     if (!date) return '';
@@ -258,14 +258,8 @@ const DriveListPage: React.FC = () => {
                 </button>
               </>
             )} />
-            <div className="flex items-center justify-between mt-4">
-              <div className="flex-1"></div>
-              <div className="flex-1 flex justify-center">
-                <PageSizeDropdown itemsPerPage={itemsPerPage} setItemsPerPage={setItemsPerPage} setCurrentPage={setCurrentPage} />
-              </div>
-              <div className="flex-1 flex justify-end">
-                <PaginationButtons currentPage={currentPage} totalPages={totalPages} setCurrentPage={setCurrentPage} />
-              </div>
+            <div className="flex items-center justify-end mt-4">
+              <PaginationButtons currentPage={currentPage} totalPages={totalPages} setCurrentPage={setCurrentPage} />
             </div>
           </div>
         </div>
