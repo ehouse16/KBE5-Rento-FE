@@ -168,7 +168,16 @@ const DriveListPage: React.FC = () => {
         <div className="flex-1">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
             {/* 운행 대시보드 카드 */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+              <div className="bg-white p-5 rounded-lg shadow-sm border border-gray-100 flex items-center justify-between">
+                <div>
+                  <p className="text-gray-500 text-sm">전체 운행</p>
+                  <h3 className="text-3xl font-bold mt-1">{totalElements}</h3>
+                </div>
+                <div className="bg-gray-100 p-3 rounded-full">
+                  <i className="fas fa-list text-gray-500"></i>
+                </div>
+              </div>
               <div className="bg-white p-5 rounded-lg shadow-sm border border-gray-100 flex items-center justify-between">
                 <div>
                   <p className="text-gray-500 text-sm">운행 전</p>
