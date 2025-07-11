@@ -1,5 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { PathPoint } from '../../types/drive';
+// import { FaCar } from 'react-icons/fa'; // 삭제
 
 // 카카오맵 API가 window 객체에 전역으로 등록되므로, 타입 선언이 필요합니다.
 declare global {
@@ -12,6 +13,7 @@ interface Marker {
   lat: number;
   lng: number;
   label?: string;
+  vehicleNumber?: string; // ← 이 줄 추가
 }
 
 interface KakaoMapProps {
@@ -241,7 +243,7 @@ const KakaoMap: React.FC<KakaoMapProps> = ({ vehiclePaths, vehicleMarkers, path,
         const overlay = new window.kakao.maps.CustomOverlay({
           map,
           position: new window.kakao.maps.LatLng(marker.lat, marker.lng),
-          content: `<div style=\"padding:6px 12px; background:${color}; color:white; border-radius:6px; font-size:15px; font-weight:bold; box-shadow:0 2px 8px rgba(0,0,0,0.15); cursor:pointer;\">${marker.label || '차량'}</div>`,
+          content: '', // 라벨 완전 제거
           yAnchor: 1.5,
         });
         overlaysRef.current.push(overlay);
@@ -252,10 +254,24 @@ const KakaoMap: React.FC<KakaoMapProps> = ({ vehiclePaths, vehicleMarkers, path,
     Object.entries(mergedVehicleMarkers).forEach(([vehicleId, marker], idx) => {
       const color = getColorByVehicleId(vehicleId, idx);
       if (marker.lat && marker.lng) {
+        const size = 45; // 원하는 크기
+
+        const svgIcon = `
+<svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}" viewBox="0 0 24 24">
+  <path d="M23.5 7c.276 0 .5.224.5.5v.511c0 .793-.926.989-1.616.989l-1.086-2h2.202zm-1.441 3.506c.639 1.186.946 2.252.946 3.666 0 1.37-.397 2.533-1.005 3.981v1.847c0 .552-.448 1-1 1h-1.5c-.552 0-1-.448-1-1v-1h-13v1c0 .552-.448 1-1 1h-1.5c-.552 0-1-.448-1-1v-1.847c-.608-1.448-1.005-2.611-1.005-3.981 0-1.414.307-2.48.946-3.666.829-1.537 1.851-3.453 2.93-5.252.828-1.382 1.262-1.707 2.278-1.889 1.532-.275 2.918-.365 4.851-.365s3.319.09 4.851.365c1.016.182 1.45.507 2.278 1.889 1.079 1.799 2.101 3.715 2.93 5.252zm-16.059 2.994c0-.828-.672-1.5-1.5-1.5s-1.5.672-1.5 1.5.672 1.5 1.5 1.5 1.5-.672 1.5-1.5zm10 1c0-.276-.224-.5-.5-.5h-7c-.276 0-.5.224-.5.5s.224.5.5.5h7c.276 0 .5-.224.5-.5zm2.941-5.527s-.74-1.826-1.631-3.142c-.202-.298-.515-.502-.869-.566-1.511-.272-2.835-.359-4.441-.359s-2.93.087-4.441.359c-.354.063-.667.267-.869.566-.891 1.315-1.631 3.142-1.631 3.142 1.64.313 4.309.497 6.941.497s5.301-.184 6.941-.497zm2.059 4.527c0-.828-.672-1.5-1.5-1.5s-1.5.672-1.5 1.5.672 1.5 1.5 1.5 1.5-.672 1.5-1.5zm-18.298-6.5h-2.202c-.276 0-.5.224-.5.5v.511c0 .793.926.989 1.616.989l1.086-2z" fill="${color}"/>
+</svg>
+`;
+
+        // 차량번호 라벨 표시
+        const label = marker.label || '';
+
         const overlay = new window.kakao.maps.CustomOverlay({
           map,
           position: new window.kakao.maps.LatLng(marker.lat, marker.lng),
-          content: `<div style="padding:6px 12px; background:${color}; color:white; border-radius:6px; font-size:15px; font-weight:bold; box-shadow:0 2px 8px rgba(0,0,0,0.15); cursor:pointer;" onclick=\"alert('차량ID: ${vehicleId} / ${marker.label || ''}')\">${marker.label || '차량'}</div>`,
+          content: `<div style="display:flex;flex-direction:column;align-items:center;">
+            ${svgIcon}
+            ${label ? `<div style='margin-top:2px;font-size:13px;font-weight:bold;color:${color};background:white;padding:2px 6px;border-radius:6px;box-shadow:0 1px 4px rgba(0,0,0,0.08);'>${label}</div>` : ''}
+          </div>`,
           yAnchor: 1.5,
         });
         overlaysRef.current.push(overlay);

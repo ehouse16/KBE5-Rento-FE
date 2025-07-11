@@ -83,9 +83,14 @@ const RealTimeEventPage: React.FC = () => {
       try {
         const data = JSON.parse(messageEvent.data);
         setTrackingStatus('SSE 구독 성공');
-        if (data && data.mdn) {
-          lastReceivedRef.current[String(data.mdn)] = Date.now(); // 항상 문자열로 저장
-          latestDataRef.current[String(data.mdn)] = data;
+        if (Array.isArray(data)) {
+          data.forEach((item) => {
+            if (item && item.mdn) {
+              eventQueueRef.current.push(item);
+            }
+          });
+        } else if (data && data.mdn) {
+          eventQueueRef.current.push(data);
         }
       } catch (e) {}
     });
@@ -99,6 +104,20 @@ const RealTimeEventPage: React.FC = () => {
       console.log('SSE useEffect cleanup (eventSource close)');
       eventSource.close();
     };
+  }, []);
+
+  // 1초마다 큐에서 하나씩 꺼내서 반영
+  useEffect(() => {
+    const interval = setInterval(() => {
+      if (eventQueueRef.current.length > 0) {
+        const item = eventQueueRef.current.shift();
+        if (item && item.mdn) {
+          lastReceivedRef.current[String(item.mdn)] = Date.now();
+          latestDataRef.current[String(item.mdn)] = item;
+        }
+      }
+    }, 1000); // 1초에 하나씩
+    return () => clearInterval(interval);
   }, []);
 
   // 10초 동안 cycle-info가 오지 않은 mdn의 마커/경로 삭제
@@ -133,6 +152,15 @@ const RealTimeEventPage: React.FC = () => {
     return () => clearInterval(interval);
   }, []);
 
+  // drivingList를 mdn 기준으로 차량번호 맵으로 변환
+  const vehicleNumberMap = React.useMemo(() => {
+    const map: { [mdn: string]: string } = {};
+    drivingList.forEach(d => {
+      map[d.mdn] = d.vehicleNumber;
+    });
+    return map;
+  }, [drivingList]);
+
   // 초당 1회, 모든 차량의 최신값만 반영
   useEffect(() => {
     const interval = setInterval(() => {
@@ -162,7 +190,7 @@ const RealTimeEventPage: React.FC = () => {
               [vehicleId]: {
                 lat: data.latitude,
                 lng: data.longitude,
-                label: `MDN: ${vehicleId}`
+                label: vehicleNumberMap[vehicleId] || '' // 차량번호를 label로
               }
             };
           });
@@ -172,7 +200,7 @@ const RealTimeEventPage: React.FC = () => {
       // latestDataRef.current = {};
     }, 1000);
     return () => clearInterval(interval);
-  }, []);
+  }, [vehicleNumberMap]);
 
   // 실시간 운행중 차량 목록 불러오기 (검색어 반영)
   useEffect(() => {
