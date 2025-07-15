@@ -244,7 +244,7 @@ const KakaoMap: React.FC<KakaoMapProps> = ({ vehiclePaths, vehicleMarkers, path,
           map,
           position: new window.kakao.maps.LatLng(marker.lat, marker.lng),
           content: '', // 라벨 완전 제거
-          yAnchor: 1.5,
+          yAnchor: 0.6,
         });
         overlaysRef.current.push(overlay);
       }
@@ -272,7 +272,7 @@ const KakaoMap: React.FC<KakaoMapProps> = ({ vehiclePaths, vehicleMarkers, path,
             ${svgIcon}
             ${label ? `<div style='margin-top:2px;font-size:13px;font-weight:bold;color:${color};background:white;padding:2px 6px;border-radius:6px;box-shadow:0 1px 4px rgba(0,0,0,0.08);'>${label}</div>` : ''}
           </div>`,
-          yAnchor: 1.5,
+          yAnchor: 0.6,
         });
         overlaysRef.current.push(overlay);
         bounds.extend(new window.kakao.maps.LatLng(marker.lat, marker.lng));
