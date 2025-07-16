@@ -141,7 +141,7 @@ const RealTimeEventPage: React.FC = () => {
         Object.keys(updated).forEach(mdn => {
           const last = lastReceivedRef.current[String(mdn)];
           const diff = now - (last || 0);
-          if (diff > 10000) {
+          if (diff > 60000) { // 1분이 지난 mdn만 삭제
             delete updated[mdn];
           }
         });
@@ -343,18 +343,11 @@ const RealTimeEventPage: React.FC = () => {
   ]));
 
   // 좌측 목록에 표시할 차량 (vehicleMarkers에 남아있는 mdn만)
-  const displayDrivingList = allMdns
-    .filter(mdn => vehicleMarkers[mdn]) // 마커가 남아있는 mdn만
-    .map(mdn => drivingList.find(d => d.mdn === mdn) || {
-      id: null,
-      mdn,
-      memberName: '(실시간 데이터만 존재)',
-      vehicleNumber: '',
-      startLocation: '',
-      endLocation: '',
-      startDate: '',
-      driveStatus: 'DRIVING',
-    });
+  // 운행 목록(drivingList) 전체를 항상 리스트에 표시하고, 실시간 위치 데이터가 있는지 여부를 추가
+  const displayDrivingList = drivingList.map(v => ({
+    ...v,
+    hasRealtime: !!vehicleMarkers[v.mdn]
+  }));
 
   console.log('[실시간 관제] displayDrivingList.length:', displayDrivingList.length, displayDrivingList);
 
@@ -413,22 +406,27 @@ const RealTimeEventPage: React.FC = () => {
           <div className="text-gray-500 text-sm">운행중인 차량이 없습니다.</div>
         ) : (
           <ul className="space-y-3">
-            {displayDrivingList.map((v) => (
-              <li
-                key={v.mdn}
-                className={`bg-white rounded-lg shadow p-3 flex flex-col gap-1 cursor-pointer hover:bg-green-50 ${vehicleFocusId === v.mdn ? 'ring-4 ring-blue-400' : ''}`}
-                onClick={() => handleVehicleClick(v.mdn)}
-              >
-                <div className="flex items-center justify-between">
-                  <span className="font-semibold text-gray-800">{v.memberName}</span>
-                  <span className={`px-2 py-1 rounded-full text-xs font-bold ${getStatusClass(v.driveStatus)}`}>{getStatusLabel(v.driveStatus)}</span>
-                </div>
-                <div className="text-gray-600 text-sm">차량번호: {v.vehicleNumber}</div>
-                <div className="text-gray-600 text-xs">출발지: {v.startLocation}</div>
-                <div className="text-gray-600 text-xs">도착지: {v.endLocation}</div>
-                <div className="text-gray-500 text-xs">시작: {formatDate(v.startDate)}</div>
-              </li>
-            ))}
+            {displayDrivingList.map((v) => {
+              if (!v.hasRealtime) {
+                console.log(`[실시간 관제] 차량 ${v.vehicleNumber} (mdn: ${v.mdn}) 실시간 위치 없음`);
+              }
+              return (
+                <li
+                  key={v.mdn}
+                  className={`bg-white rounded-lg shadow p-3 flex flex-col gap-1 cursor-pointer hover:bg-green-50 ${vehicleFocusId === v.mdn ? 'ring-4 ring-blue-400' : ''}`}
+                  onClick={() => handleVehicleClick(v.mdn)}
+                >
+                  <div className="flex items-center justify-between">
+                    <span className="font-semibold text-gray-800">{v.memberName}</span>
+                    <span className={`px-2 py-1 rounded-full text-xs font-bold ${getStatusClass(v.driveStatus)}`}>{getStatusLabel(v.driveStatus)}</span>
+                  </div>
+                  <div className="text-gray-600 text-sm">차량번호: {v.vehicleNumber}</div>
+                  <div className="text-gray-600 text-xs">출발지: {v.startLocation}</div>
+                  <div className="text-gray-600 text-xs">도착지: {v.endLocation}</div>
+                  <div className="text-gray-500 text-xs">시작: {formatDate(v.startDate)}</div>
+                </li>
+              );
+            })}
           </ul>
         )}
       </div>
